@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Coach Booking</title>
-<meta name="theme-color" content="#060a18">
+<meta name="theme-color" content="#0a0a0c">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* Layout: dark "midnight abyss" canvas, glowing aqua-jade line work, condensed athletic display type.
    Baby pink is a dash only: selection handles, small labels, one chip. */
@@ -219,6 +219,59 @@ details > summary::-webkit-details-marker { display: none; }
 .win { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
 .win input { width: auto; flex: 1; min-width: 0; padding: 7px 8px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ===== Onyx Lab: onyx black, electric indigo, tropical mint (mint uses the --pink slot) ===== */
+:root {
+  --bg: #0a0a0c; --bg-2: #101013; --surface: #141418; --surface-2: #1c1c22; --border: #24242c; --border-2: #32323d;
+  --text: #f4f4f6; --muted: #9a9aa8; --faint: #62626f; --text-2: #c9c9d3;
+  --accent: #5b3df5; --accent-ink: #ffffff; --accent-text: #9583ff; --accent-soft: rgba(91,61,245,.16);
+  --pink: #3ee6b0; --pink-soft: rgba(62,230,176,.12); --ph-line: #f4f4f6;
+  --radius: 8px; --radius-sm: 6px;
+  --glow: 0 0 0 1px var(--accent), 0 16px 40px -16px rgba(91,61,245,.7);
+  --display: "Chakra Petch", "IBM Plex Sans", sans-serif; --body: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+body { background: var(--bg); }
+h1, h2 { font-weight: 700; letter-spacing: 0; }
+h2 { font-size: clamp(26px, 3.4vw, 36px); }
+button, .btn { border-radius: 6px; }
+button.primary, .btn.primary { box-shadow: 0 10px 30px -12px rgba(91,61,245,.9); }
+.card { background: var(--surface); }
+.price { font: 700 36px/1 var(--display); }
+.pkg .per b { color: var(--pink); font-family: var(--mono); }
+.eyebrow { font-family: var(--mono); font-weight: 500; letter-spacing: .08em; color: var(--pink); }
+.eyebrow::before { content: "//"; width: auto; height: auto; background: none; color: var(--faint); }
+.ph { background: radial-gradient(80% 70% at 85% 15%, rgba(62,230,176,.35), transparent 60%), radial-gradient(90% 90% at 10% 100%, rgba(91,61,245,.55), transparent 60%), linear-gradient(160deg, #1a1a24, #0d0d12); }
+.band, .ph { border-radius: 8px; }
+.step::before { -webkit-text-stroke: 0; color: var(--accent-text); font-family: var(--mono); font-size: 14px; font-weight: 500; content: "STEP_0" counter(step); }
+.step { background: var(--surface); }
+.policies b { font-family: var(--display); }
+.mark { background: linear-gradient(135deg, var(--accent), var(--pink)); border-radius: 6px; box-shadow: none; }
+.brand { font: 700 18px/1 var(--display); letter-spacing: .04em; }
+.stat .n, .hero-meta b { font-family: var(--display); }
+/* hero */
+.lab { position: relative; margin-top: 20px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  background: radial-gradient(50% 60% at 80% 20%, rgba(91,61,245,.28), transparent 60%), radial-gradient(40% 40% at 0% 100%, rgba(62,230,176,.12), transparent 60%),
+  linear-gradient(var(--border) 1px, transparent 1px) 0 0/40px 40px, linear-gradient(90deg, var(--border) 1px, transparent 1px) 0 0/40px 40px, var(--bg); }
+.lab-inner { display: grid; grid-template-columns: 1.2fr .8fr; gap: 32px; padding: clamp(28px, 5vw, 60px); align-items: center; background: linear-gradient(90deg, rgba(10,10,12,.92) 40%, rgba(10,10,12,.55)); }
+@media (max-width: 880px) { .lab-inner { grid-template-columns: 1fr; } }
+.lab .tagline { font: 500 12px var(--mono); color: var(--muted); letter-spacing: .06em; margin-bottom: 18px; }
+.lab .tagline b { color: var(--pink); font-weight: 500; }
+.lab h1 { font: 700 clamp(54px, 8.6vw, 116px)/.92 var(--display); text-transform: uppercase; margin: 0 0 22px; letter-spacing: -.01em; }
+.lab h1 em { font-style: normal; background: linear-gradient(90deg, #7a5cff, var(--pink)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lab .lede { color: var(--text-2); }
+.board { background: rgba(16,16,19,.92); border: 1px solid var(--border-2); border-radius: 10px; overflow: hidden; font-family: var(--mono); box-shadow: 0 30px 60px -30px rgba(0,0,0,.9), 0 0 0 1px rgba(91,61,245,.15); }
+.board .bh { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 11px; letter-spacing: .1em; color: var(--muted); }
+.board .live { color: var(--pink); display: inline-flex; gap: 6px; align-items: center; }
+.board .live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 10px var(--pink); }
+.board .mini-slots { display: block; margin: 0; }
+.board .mini-slots span { display: flex; justify-content: space-between; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: none; padding: 12px 16px; font: 500 14px var(--mono); text-align: left; }
+.board .mini-slots span::after { content: "OPEN"; color: var(--pink); font-size: 11px; letter-spacing: .1em; }
+.board .mini-slots span:first-child { background: var(--accent-soft); color: var(--text); }
+.board .stats3 { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--border); }
+.board .stats3 div { padding: 12px 16px; font-size: 10px; letter-spacing: .1em; color: var(--muted); border-right: 1px solid var(--border); }
+.board .stats3 div:last-child { border-right: 0; }
+.board .stats3 b { display: block; font: 700 20px/1.2 var(--display); color: var(--text); letter-spacing: 0; }
+.board .bf { padding: 14px 16px; }
 </style>
 </head>
 <body>
@@ -233,7 +286,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 /** Placeholder image: gradient panel with a figure outline and a label. Swap for a real <img> later. */
 function ph(label) {
   return `<div class="ph" role="img" aria-label="${esc(label)} (placeholder)">
-    <svg class="fig" viewBox="0 0 200 260" aria-hidden="true"><g fill="none" stroke="#ecf1ff" stroke-width="2">
+    <svg class="fig" viewBox="0 0 200 260" aria-hidden="true"><g fill="none" style="stroke:var(--ph-line)" stroke-width="2">
       <circle cx="100" cy="70" r="34"/><path d="M30 260 C 30 170, 60 128, 100 128 S 170 170, 170 260"/></g></svg>
     <span class="ph-label">${esc(label)}</span></div>`;
 }
@@ -533,47 +586,28 @@ async function coachPage(slug) {
       </div></header>
 
       <main class="wrap">
-        <section class="hero">
-          <svg class="lines" viewBox="0 0 1200 640" preserveAspectRatio="none" aria-hidden="true">
-            <defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6"/></filter></defs>
-            <path d="M-20 520 C 160 520, 230 80, 420 120 S 640 600, 820 420 S 1080 60, 1230 180" fill="none" stroke="#2fd4b4" stroke-width="5" opacity=".45" filter="url(#glow)"/>
-            <path d="M-20 520 C 160 520, 230 80, 420 120 S 640 600, 820 420 S 1080 60, 1230 180" fill="none" stroke="#2fd4b4" stroke-width="1.6"/>
-            <line x1="0" y1="616" x2="1200" y2="616" stroke="#2fd4b4" stroke-opacity=".35" stroke-width="1"/>
-            ${[60, 300, 560, 820, 1080].map((x, i) => `<rect x="${x - 4}" y="612" width="8" height="8" rx="1.5" fill="${i === 2 ? "#ffbfd6" : "#2fd4b4"}"/>`).join("")}
-            <circle cx="420" cy="120" r="4" fill="#ffbfd6"/>
-          </svg>
-          <div class="hero-inner">
-            <div>
-              ${notice}
-              <div class="eyebrow">${esc(coach.name)}</div>
-              <h1 class="display">${displayHeadline(coach.headline)}</h1>
-              <p class="lede">${lede}</p>
-              <div class="hero-cta">
-                ${me && me.creditsRemaining ? `<button class="primary lg" data-act="book">Book a lesson</button>` : `<button class="primary lg" data-act="go" data-to="packages">See packages</button>`}
-                <button class="lg" data-act="go" data-to="${groupPkgs.length ? "groups" : "corporate"}">${groupPkgs.length ? "Small groups" : "Corporate wellness"}</button>
-              </div>
-              <div class="hero-meta">
-                ${fromPrice ? `<div><b>${money(Math.round(fromPrice))}</b>per lesson, from</div>` : ""}
-                <div><b>${coach.lessonMinutes} min</b>lessons</div>
-                ${group ? `<div><b>${group.minPeople}–${group.maxPeople}</b>per small group</div>` : ""}
-              </div>
-            </div>
-            <div class="stage">
-              ${best ? `<div class="float f1"><span class="k">${esc(best.name)}</span>${money(Math.round(perLesson(best)))} / lesson</div>` : ""}
-              ${group ? `<div class="float f2"><span class="k">Small groups</span><span class="v">${money(group.priceCents)} / person</span></div>` : ""}
-              <div class="phone"><div class="screen">
-                <div class="notch"></div>
-                ${ph("Coach photo")}
-                <div class="screen-body">
-                  <h4>Next open times</h4>
-                  <div class="muted small">${coach.lessonMinutes}-minute private lesson</div>
-                  <div class="mini-slots" id="next-slots"><span>…</span><span>…</span><span>…</span><span>…</span></div>
-                  <button class="primary block sm" data-act="${me && me.creditsRemaining ? "book" : "go"}" data-to="packages">Book a lesson</button>
-                </div>
-              </div></div>
+        <section class="lab"><div class="lab-inner">
+          <div>
+            ${notice}
+            <div class="tagline"><b>&gt;</b> ${esc(coach.name.toUpperCase())} <span style="color:var(--faint)">/ private · groups · corporate</span></div>
+            <h1>${esc((coach.headline || "").split(" ").slice(0, -1).join(" "))}<br><em>${esc((coach.headline || "").split(" ").slice(-1)[0] || "")}</em></h1>
+            <p class="lede">${lede}</p>
+            <div class="hero-cta">
+              <button class="primary lg" data-act="go" data-to="packages">See packages</button>
+              <button class="lg" data-act="go" data-to="groups">Small groups</button>
             </div>
           </div>
-        </section>
+          <div class="board">
+            <div class="bh"><span>NEXT_OPEN // ${esc(tzLabel(tz))}</span><span class="live">LIVE</span></div>
+            <div class="mini-slots" id="next-slots"><span>…</span><span>…</span><span>…</span><span>…</span></div>
+            <div class="stats3">
+              ${fromPrice ? `<div><b>${money(Math.round(fromPrice))}</b>PER LESSON</div>` : ""}
+              <div><b>${coach.lessonMinutes}m</b>LENGTH</div>
+              ${group ? `<div><b>${group.minPeople}–${group.maxPeople}</b>GROUP</div>` : ""}
+            </div>
+            <div class="bf"><button class="primary block" data-act="${me && me.creditsRemaining ? "book" : "go"}" data-to="packages">Book a lesson</button></div>
+          </div>
+        </div></section>
 
         ${me ? `
         <section class="section" style="margin-top:28px">
@@ -661,7 +695,7 @@ async function coachPage(slug) {
             <div class="band-body">
               <div class="eyebrow">About</div>
               <h2>${esc(coach.name)}</h2>
-              <p style="white-space:pre-line;color:#c3cbea;margin:0">${esc(coach.bio)}</p>
+              <p style="white-space:pre-line;color:var(--text-2);margin:0">${esc(coach.bio)}</p>
             </div>
           </div>
         </section>` : ""}
