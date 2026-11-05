@@ -1,0 +1,12 @@
+# Netlify site config: publish public/, functions in netlify/functions.
+[build]
+  publish = "public"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Single-page app: /admin and /<coach-slug> both load index.html.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

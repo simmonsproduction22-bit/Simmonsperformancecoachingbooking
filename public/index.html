@@ -1,0 +1,1162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coach Booking</title>
+<meta name="theme-color" content="#0f766e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f7f5; --surface: #ffffff; --surface-2: #f0f2ef; --border: #e2e5e0;
+  --text: #16201d; --muted: #5d6a65; --accent: #0f766e; --accent-ink: #ffffff; --accent-soft: #e3f2ef;
+  --warn: #b45309; --warn-soft: #fdf3e2; --danger: #b42318; --danger-soft: #fdecea; --ok: #15803d; --ok-soft: #e7f6ec;
+  --radius: 14px; --shadow: 0 1px 2px rgba(16,24,20,.06), 0 4px 16px rgba(16,24,20,.05);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1412; --surface: #151d1a; --surface-2: #1b2521; --border: #27332e;
+    --text: #e8eeeb; --muted: #95a39d; --accent: #2dd4bf; --accent-ink: #062a26; --accent-soft: #123430;
+    --warn: #f5b454; --warn-soft: #33270f; --danger: #f88a7e; --danger-soft: #3a1714; --ok: #6ee7a0; --ok-soft: #12301f;
+    --shadow: 0 1px 2px rgba(0,0,0,.3); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1412; --surface: #151d1a; --surface-2: #1b2521; --border: #27332e;
+  --text: #e8eeeb; --muted: #95a39d; --accent: #2dd4bf; --accent-ink: #062a26; --accent-soft: #123430;
+  --warn: #f5b454; --warn-soft: #33270f; --danger: #f88a7e; --danger-soft: #3a1714; --ok: #6ee7a0; --ok-soft: #12301f;
+  --shadow: 0 1px 2px rgba(0,0,0,.3); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { color: var(--accent); }
+h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; letter-spacing: -.01em; }
+h1 { font-size: clamp(26px, 5vw, 36px); font-weight: 700; }
+h2 { font-size: 20px; font-weight: 650; }
+h3 { font-size: 16px; font-weight: 600; }
+p { margin: 0 0 .75em; }
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.spread { justify-content: space-between; }
+.grow { flex: 1; min-width: 0; }
+.stack > * + * { margin-top: 12px; }
+.hidden { display: none !important; }
+
+header.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 12px; }
+.brand { font-weight: 700; font-size: 16px; text-decoration: none; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+.card + .card { margin-top: 14px; }
+.grid > .card, .stats > .card { margin-top: 0; }
+.item .grow { min-width: 180px; }
+.section { margin: 28px 0; }
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+
+button, .btn { font: inherit; font-weight: 600; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 9px 14px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; }
+button:hover { background: var(--surface-2); }
+button.primary, .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.primary:hover { filter: brightness(1.05); }
+button.danger { color: var(--danger); }
+button.ghost { background: transparent; border-color: transparent; }
+button.sm { padding: 5px 10px; min-height: 32px; font-size: 13px; }
+button:disabled { opacity: .55; cursor: default; }
+button.block { width: 100%; }
+
+label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--muted); }
+input, select, textarea { font: inherit; width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+textarea { min-height: 90px; resize: vertical; }
+.field { margin-bottom: 12px; }
+.fields { display: grid; gap: 0 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 99px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.danger { background: var(--danger-soft); color: var(--danger); }
+.pill.accent { background: var(--accent-soft); color: var(--accent); }
+
+.hero { padding: 36px 0 8px; }
+.hero .meta { color: var(--muted); }
+.price { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+.pkg { display: flex; flex-direction: column; }
+.pkg .desc { flex: 1; }
+
+.list { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.item { padding: 14px 16px; border-top: 1px solid var(--border); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.item:first-child { border-top: 0; }
+.item .when { font-weight: 600; }
+.empty { padding: 22px 16px; color: var(--muted); text-align: center; }
+
+.tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--border); margin: 16px 0 20px; scrollbar-width: none; }
+.tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; color: var(--muted); padding: 10px 12px; white-space: nowrap; }
+.tabs button.on { color: var(--text); border-bottom-color: var(--accent); }
+
+.stats { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.stat .n { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+.stat .l { font-size: 13px; color: var(--muted); font-weight: 600; }
+
+.days { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
+.day { flex: 0 0 auto; width: 64px; text-align: center; padding: 8px 4px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: block; min-height: 0; }
+.day .dow { font-size: 12px; color: var(--muted); font-weight: 600; }
+.day .dn { font-size: 18px; font-weight: 700; }
+.day .cnt { font-size: 11px; color: var(--muted); }
+.day.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.day.on .dow, .day.on .cnt { color: var(--accent-ink); }
+.day:disabled { opacity: .4; }
+.slots { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); margin-top: 14px; }
+.slot.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+.sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+@media (min-width: 640px) { .sheet-bg { align-items: center; } }
+.sheet { background: var(--surface); width: 100%; max-width: 520px; max-height: 92vh; overflow: auto; border-radius: 18px 18px 0 0; padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); }
+@media (min-width: 640px) { .sheet { border-radius: 18px; } }
+.sheet .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.sheet .head h2 { margin: 0; }
+
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; z-index: 60; font-weight: 600; max-width: calc(100% - 32px); box-shadow: var(--shadow); }
+.banner { padding: 12px 14px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-weight: 500; margin-bottom: 14px; }
+.banner.ok { background: var(--ok-soft); color: var(--ok); }
+.banner.info { background: var(--accent-soft); color: var(--accent); }
+.err { color: var(--danger); font-size: 14px; margin: 6px 0 0; min-height: 1em; }
+.auth { max-width: 420px; margin: 40px auto; }
+.avail-day { display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 12px 0; border-top: 1px solid var(--border); align-items: start; }
+.avail-day:first-child { border-top: 0; }
+.win { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.win input { width: auto; flex: 1; min-width: 0; padding: 7px 8px; }
+footer { padding: 40px 0; color: var(--muted); font-size: 13px; text-align: center; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-top: 1px solid var(--border); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; border-top: 0; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+details > summary { cursor: pointer; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+"use strict";
+// ======================================================================
+// Small helpers
+// ======================================================================
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = (c) => "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 });
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} },
+};
+
+async function api(method, path, body, token) {
+  const res = await fetch("/api" + path, {
+    method, headers: { "content-type": "application/json", ...(token ? { authorization: "Bearer " + token } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let data = {};
+  try { data = await res.json(); } catch {}
+  if (!res.ok) { const e = new Error(data.error || "Something went wrong."); e.status = res.status; throw e; }
+  return data;
+}
+
+let toastTimer;
+function toast(msg) {
+  document.querySelectorAll(".toast").forEach((t) => t.remove());
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = msg; t.setAttribute("role", "status");
+  document.body.appendChild(t);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.remove(), 3200);
+}
+
+function sheet(title, html, onMount) {
+  const bg = document.createElement("div");
+  bg.className = "sheet-bg";
+  bg.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+    <div class="head"><h2>${esc(title)}</h2><button class="ghost sm" data-close aria-label="Close">✕</button></div>
+    <div class="body">${html}</div></div>`;
+  const close = () => { bg.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  bg.addEventListener("click", (e) => { if (e.target === bg || e.target.closest("[data-close]")) close(); });
+  document.addEventListener("keydown", onKey);
+  document.body.appendChild(bg);
+  onMount && onMount($(".body", bg), close);
+  const first = bg.querySelector("input, select, textarea");
+  first && first.focus();
+  return close;
+}
+
+function confirmSheet(title, text, yesLabel, danger) {
+  return new Promise((resolve) => {
+    let answered = false;
+    const close = sheet(title, `<p>${text}</p><div class="row" style="justify-content:flex-end;margin-top:16px">
+      <button data-no>Never mind</button><button class="${danger ? "primary" : "primary"}" data-yes>${esc(yesLabel)}</button></div>`,
+      (body, close) => {
+        $("[data-no]", body).onclick = () => { answered = true; close(); resolve(false); };
+        $("[data-yes]", body).onclick = () => { answered = true; close(); resolve(true); };
+      });
+  });
+}
+
+/** Wires a <form> to an async handler with busy state and inline errors. */
+function handleForm(form, fn) {
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector("button[type=submit]");
+    const err = form.querySelector(".err");
+    if (err) err.textContent = "";
+    btn && (btn.disabled = true);
+    try { await fn(Object.fromEntries(new FormData(form))); }
+    catch (x) { if (err) err.textContent = x.message; else toast(x.message); }
+    finally { btn && (btn.disabled = false); }
+  });
+}
+
+// ---------- Time zone helpers (everything is shown in the coach's time zone) ----------
+function fmtIn(tz, opts) { return new Intl.DateTimeFormat("en-US", { timeZone: tz, ...opts }); }
+const fmtDay = (d, tz) => fmtIn(tz, { weekday: "short", month: "short", day: "numeric" }).format(new Date(d));
+const fmtTime = (d, tz) => fmtIn(tz, { hour: "numeric", minute: "2-digit" }).format(new Date(d));
+const fmtWhen = (d, tz) => `${fmtDay(d, tz)} · ${fmtTime(d, tz)}`;
+const fmtDate = (d, tz) => fmtIn(tz, { month: "short", day: "numeric", year: "numeric" }).format(new Date(d));
+function tzLabel(tz) {
+  try { return fmtIn(tz, { timeZoneName: "short" }).formatToParts(new Date()).find((p) => p.type === "timeZoneName").value; } catch { return tz; }
+}
+function localParts(ms, tz) {
+  const p = {};
+  for (const x of fmtIn(tz, { hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }).formatToParts(new Date(ms))) p[x.type] = x.value;
+  return p;
+}
+function localDate(ms, tz) { const p = localParts(ms, tz); return `${p.year}-${p.month}-${p.day}`; }
+function offsetMs(ms, tz) { const p = localParts(ms, tz); return Date.UTC(+p.year, p.month - 1, +p.day, +p.hour, +p.minute, +p.second) - Math.floor(ms / 1000) * 1000; }
+/** "YYYY-MM-DDTHH:MM" as wall time in tz -> UTC ms. */
+function zonedToUtc(local, tz) {
+  const [d, t = "00:00"] = local.split("T");
+  const [y, m, day] = d.split("-").map(Number); const [hh, mm] = t.split(":").map(Number);
+  const wall = Date.UTC(y, m - 1, day, hh, mm);
+  let utc = wall - offsetMs(wall, tz);
+  const second = wall - offsetMs(utc, tz);
+  return second !== utc ? second : utc;
+}
+function toLocalInput(ms, tz) { const p = localParts(ms, tz); return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`; }
+function addDays(date, n) { const [y, m, d] = date.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); }
+const minToTime = (m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+const timeToMin = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const STATUS = {
+  booked: ["Booked", "accent"], completed: ["Done", "ok"], no_show: ["No-show", "warn"],
+  late_cancel: ["Late cancel", "warn"], canceled: ["Canceled", ""],
+};
+const statusPill = (s) => `<span class="pill ${STATUS[s][1]}">${STATUS[s][0]}</span>`;
+
+// ======================================================================
+// Slot picker (shared by clients booking/rescheduling)
+// ======================================================================
+/**
+ * Renders a day strip + time slots into `el`. Calls onPick(isoString) when a time is chosen.
+ * fetchSlots(fromDate, days) -> { slots: [iso], timezone }
+ */
+async function slotPicker(el, tz, maxDays, fetchSlots, onPick) {
+  const today = localDate(Date.now(), tz);
+  const total = Math.min(maxDays, 42);
+  let byDay = {}; let selected = null; let loaded = 0;
+  el.innerHTML = `<div class="days" role="listbox" aria-label="Pick a day"></div><div class="slots"></div>
+    <p class="muted small" style="margin-top:12px">Times are ${esc(tzLabel(tz))}.</p>`;
+  const daysEl = $(".days", el), slotsEl = $(".slots", el);
+
+  async function load(from) {
+    const r = await fetchSlots(from, 14);
+    for (let i = 0; i < 14; i++) byDay[addDays(from, i)] ||= [];
+    for (const s of r.slots) (byDay[localDate(Date.parse(s), tz)] ||= []).push(s);
+    loaded += 14;
+  }
+  function drawDays() {
+    const dates = Object.keys(byDay).sort().slice(0, total);
+    daysEl.innerHTML = dates.map((d) => {
+      const ms = Date.parse(d + "T12:00:00Z"); const n = byDay[d].length;
+      return `<button class="day ${d === selected ? "on" : ""}" data-d="${d}" ${n ? "" : "disabled"} aria-selected="${d === selected}">
+        <div class="dow">${DOW[new Date(ms).getUTCDay()]}</div><div class="dn">${+d.slice(8)}</div><div class="cnt">${n ? n + " open" : "—"}</div></button>`;
+    }).join("") + (loaded < total ? `<button class="day" data-more><div class="dow">More</div><div class="dn">→</div><div class="cnt">days</div></button>` : "");
+  }
+  function drawSlots() {
+    const list = byDay[selected] || [];
+    slotsEl.innerHTML = list.length ? list.map((s) => `<button class="slot" data-s="${s}">${fmtTime(s, tz)}</button>`).join("")
+      : `<p class="muted" style="grid-column:1/-1">No open times this day.</p>`;
+  }
+  daysEl.addEventListener("click", async (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.more !== undefined) {
+      b.disabled = true; await load(addDays(today, loaded)); drawDays(); return;
+    }
+    selected = b.dataset.d; drawDays(); drawSlots();
+  });
+  slotsEl.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-s]"); if (!b) return;
+    slotsEl.querySelectorAll(".slot").forEach((x) => x.classList.toggle("on", x === b));
+    onPick(b.dataset.s);
+  });
+  slotsEl.innerHTML = `<p class="muted">Loading times…</p>`;
+  await load(today);
+  if (!Object.values(byDay).some((l) => l.length) && loaded < total) await load(addDays(today, loaded));
+  selected = Object.keys(byDay).sort().find((d) => byDay[d].length) || today;
+  drawDays(); drawSlots();
+}
+
+// ======================================================================
+// Router
+// ======================================================================
+const app = $("#app");
+function route() {
+  const path = location.pathname.replace(/\/+$/, "") || "/";
+  if (path === "/") return directoryPage();
+  if (path === "/admin") return coachApp();
+  const slug = path.slice(1).split("/")[0].toLowerCase();
+  return coachPage(slug);
+}
+
+async function directoryPage() {
+  app.innerHTML = `<div class="wrap"><p class="muted" style="margin-top:40px">Loading…</p></div>`;
+  try {
+    const { coaches } = await api("GET", "/directory");
+    if (coaches.length === 1) { history.replaceState(null, "", "/" + coaches[0].slug); return route(); }
+    app.innerHTML = `<header class="top"><div class="wrap"><span class="brand">Coach Booking</span><a class="btn" href="/admin">Coach sign in</a></div></header>
+      <main class="wrap section">
+        <h1>Book lessons with your coach</h1>
+        <p class="muted">Buy a package, then book and reschedule lessons online.</p>
+        ${coaches.length ? `<div class="grid" style="margin-top:20px">${coaches.map((c) => `
+          <a class="card" href="/${esc(c.slug)}" style="text-decoration:none;color:inherit">
+            <h3>${esc(c.name)}</h3><p class="muted">${esc(c.headline || c.location || "")}</p></a>`).join("")}</div>`
+          : `<div class="card" style="margin-top:20px"><h3>No coaches yet</h3><p class="muted">If you're the owner, <a href="/admin">create your coach account</a>.</p></div>`}
+      </main>`;
+  } catch (e) {
+    app.innerHTML = `<div class="wrap"><div class="banner" style="margin-top:40px">${esc(e.message)}</div></div>`;
+  }
+}
+
+// ======================================================================
+// Public coach page + client area
+// ======================================================================
+async function coachPage(slug) {
+  const tokenKey = "client:" + slug;
+  let token = store.get(tokenKey);
+  let pub, me = null;
+
+  app.innerHTML = `<div class="wrap"><p class="muted" style="margin-top:40px">Loading…</p></div>`;
+  const offerToken = new URLSearchParams(location.search).get("offer") || store.get("offer:" + slug) || "";
+  try { pub = await api("GET", `/c/${slug}${offerToken ? "?offer=" + encodeURIComponent(offerToken) : ""}`); }
+  catch (e) {
+    app.innerHTML = `<div class="wrap auth"><div class="card"><h2>Page not found</h2><p class="muted">There's no coach at this address.</p><a href="/">Go home</a></div></div>`;
+    return;
+  }
+  const coach = pub.coach, tz = coach.timezone;
+  document.title = `${coach.name} · Lessons`;
+  // Remember an offer link across sign-up and the Stripe round trip; forget it once it's gone.
+  store.set("offer:" + slug, pub.offer ? offerToken : null);
+  const allPkgs = [...pub.packages, ...(pub.offer ? [pub.offer] : [])];
+  const groupLabel = (n) => `Group of ${n}`;
+
+  async function loadMe() {
+    if (!token) { me = null; return; }
+    try { me = await api("GET", `/c/${slug}/me`, null, token); }
+    catch (e) { if (e.status === 401) { token = null; store.set(tokenKey, null); me = null; } else throw e; }
+  }
+
+  // Back from Stripe Checkout.
+  const params = new URLSearchParams(location.search);
+  let notice = "", justPaid = false;
+  if (params.get("paid") && token) {
+    try {
+      const r = await api("POST", `/c/${slug}/purchases/${encodeURIComponent(params.get("paid"))}/confirm`, {}, token);
+      justPaid = r.paid;
+      notice = r.paid ? `<div class="banner ok">Payment received. Your lessons are ready to book.</div>`
+        : `<div class="banner">We haven't seen the payment go through yet. Refresh in a minute.</div>`;
+    } catch {}
+    history.replaceState(null, "", location.pathname);
+  } else if (params.get("canceled")) {
+    notice = `<div class="banner info">Checkout canceled. You weren't charged.</div>`;
+    history.replaceState(null, "", location.pathname);
+  }
+
+  await loadMe();
+  draw();
+  if (justPaid && me?.creditsRemaining) bookSheet();
+
+  function pkgCard(p, offer) {
+    const each = p.lessonCount > 1 ? ` · ${money(Math.round(p.priceCents / p.lessonCount))} each` : "";
+    return `<div class="card pkg" ${offer ? 'style="border-color:var(--accent)"' : ""}>
+      ${offer ? `<span class="pill accent" style="align-self:flex-start;margin-bottom:8px">Custom offer for you</span>` : ""}
+      <h3>${esc(p.name)}</h3>
+      ${p.kind === "group"
+        ? `<div class="price">${money(p.priceCents)} <span class="muted" style="font-size:15px;font-weight:500">per person</span></div>
+           <p class="muted small">${p.minPeople}–${p.maxPeople} people · ${p.lessonCount} lesson${p.lessonCount > 1 ? "s" : ""} · use within ${p.expiresDays} days</p>`
+        : `<div class="price">${money(p.priceCents)}</div>
+           <p class="muted small">${p.lessonCount} lesson${p.lessonCount > 1 ? "s" : ""}${each} · use within ${p.expiresDays} days</p>`}
+      <p class="desc" style="white-space:pre-line">${esc(p.description)}</p>
+      <button class="primary block" data-act="buy" data-id="${p.id}" ${pub.paymentsReady ? "" : "disabled"}>${p.kind === "group" ? "Choose group size" : "Buy"}</button>
+    </div>`;
+  }
+
+  function draw() {
+    const upcoming = me ? me.lessons.filter((l) => l.status === "booked").sort((a, b) => a.startsAt.localeCompare(b.startsAt)) : [];
+    const past = me ? me.lessons.filter((l) => l.status !== "booked").slice(0, 10) : [];
+    const privatePkgs = pub.packages.filter((p) => p.kind !== "group");
+    const groupPkgs = pub.packages.filter((p) => p.kind === "group");
+    app.innerHTML = `
+      <header class="top"><div class="wrap">
+        <a class="brand" href="/${esc(slug)}">${esc(coach.name)}</a>
+        ${me ? `<div class="row"><span class="muted small">${esc(me.client.name)}</span><button class="sm" data-act="logout">Sign out</button></div>`
+             : `<button class="primary sm" data-act="login">Sign in</button>`}
+      </div></header>
+      <main class="wrap">
+        <section class="hero">
+          ${notice}
+          <h1>${esc(coach.name)}</h1>
+          ${coach.headline ? `<p style="font-size:18px">${esc(coach.headline)}</p>` : ""}
+          <p class="meta">${[coach.location, `${coach.lessonMinutes}-minute lessons`].filter(Boolean).map(esc).join(" · ")}</p>
+        </section>
+
+        ${me ? `
+        <section class="section">
+          <div class="card">
+            <div class="row spread">
+              <div><h2 style="margin:0">Your lessons</h2>
+                ${me.credits.length ? me.credits.map((c) => `<p class="muted" style="margin:4px 0 0">
+                    <strong style="color:var(--text)">${c.remaining}</strong> ${c.kind === "group" ? `group lesson${c.remaining === 1 ? "" : "s"} (${c.partySize} people)` : `lesson${c.remaining === 1 ? "" : "s"}`} left
+                    · ${esc(c.packageName)}${c.expiresAt ? ` · use by ${fmtDate(c.expiresAt, tz)}` : ""}</p>`).join("")
+                  : `<p class="muted" style="margin:4px 0 0">No lessons left to book</p>`}</div>
+              ${me.creditsRemaining ? `<button class="primary" data-act="book">Book a lesson</button>` : `<a class="btn primary" href="#packages">Buy lessons</a>`}
+            </div>
+          </div>
+          <div class="list" style="margin-top:12px">
+            ${upcoming.length ? upcoming.map((l) => `
+              <div class="item">
+                <div class="grow"><div class="when">${fmtWhen(l.startsAt, tz)}</div><div class="muted small">${l.kind === "group" ? groupLabel(l.partySize) + " · " : ""}${coach.lessonMinutes} min${l.note ? " · " + esc(l.note) : ""}</div></div>
+                ${(Date.parse(l.startsAt) - Date.now()) / 3600e3 >= coach.cancelWindowHours ? `
+                <button class="sm" data-act="move" data-id="${l.id}">Reschedule</button>
+                <button class="sm danger" data-act="cancel" data-id="${l.id}">Cancel</button>`
+                : `<span class="muted small">Less than ${coach.cancelWindowHours}h away. Contact ${esc(coach.name)} to change.</span>`}
+              </div>`).join("") : `<div class="empty">No upcoming lessons.</div>`}
+          </div>
+          ${past.length ? `<details style="margin-top:12px"><summary class="muted small">Past lessons</summary>
+            <div class="list" style="margin-top:8px">${past.map((l) => `<div class="item"><div class="grow">${fmtWhen(l.startsAt, tz)}</div>${statusPill(l.status)}</div>`).join("")}</div></details>` : ""}
+        </section>` : ""}
+
+        ${pub.offer ? `<section class="section"><div class="grid">${pkgCard(pub.offer, true)}</div></section>` : ""}
+
+        <section class="section" id="packages">
+          <h2>Private lessons</h2>
+          ${privatePkgs.length ? `<div class="grid">${privatePkgs.map((p) => pkgCard(p)).join("")}</div>` : `<p class="muted">Packages coming soon.</p>`}
+          ${groupPkgs.length ? `<h2 style="margin-top:28px">Small groups</h2>
+            <p class="muted">Bring your friends, family or team. One person books and pays for the group.</p>
+            <div class="grid">${groupPkgs.map((p) => pkgCard(p)).join("")}</div>` : ""}
+          ${pub.paymentsReady ? `<p class="muted small" style="margin-top:12px">Secure card payment through Stripe.</p>` : `<p class="muted small" style="margin-top:12px">Online payment isn't turned on yet.</p>`}
+        </section>
+
+        <section class="section">
+          <h2>Corporate wellness</h2>
+          <div class="card">
+            <p>Sessions for your team, priced to fit your group and schedule.</p>
+            <button class="primary" data-act="quote">Request a quote</button>
+          </div>
+        </section>
+
+        ${coach.bio ? `<section class="section"><h2>About</h2><div class="card"><p style="white-space:pre-line;margin:0">${esc(coach.bio)}</p></div></section>` : ""}
+
+        <section class="section">
+          <h2>Policies</h2>
+          <div class="card small">
+            <p>• Reschedule or cancel online up to <strong>${coach.cancelWindowHours} hours</strong> before a lesson and the lesson goes back on your balance.</p>
+            <p>• Inside ${coach.cancelWindowHours} hours, or if you don't show up, the lesson counts as used.</p>
+            <p style="margin:0">• Book at least ${coach.minNoticeHours} hour${coach.minNoticeHours === 1 ? "" : "s"} ahead, up to ${coach.maxDaysAhead} days out.</p>
+          </div>
+        </section>
+      </main>
+      <footer>${esc(coach.name)} · <a href="/admin">Coach sign in</a></footer>`;
+  }
+
+  app.onclick = async (e) => {
+    const b = e.target.closest("[data-act]"); if (!b) return;
+    const act = b.dataset.act, id = b.dataset.id;
+    if (act === "login") return authSheet();
+    if (act === "logout") {
+      api("POST", `/c/${slug}/logout`, {}, token).catch(() => {});
+      token = null; store.set(tokenKey, null); me = null; draw(); return;
+    }
+    if (act === "buy") {
+      const pkg = allPkgs.find((p) => p.id == id);
+      const go = () => (pkg.kind === "group" ? groupSheet(pkg) : buy(pkg));
+      if (!me) return authSheet(go);
+      return go();
+    }
+    if (act === "quote") return quoteSheet();
+    if (act === "book") return bookSheet();
+    if (act === "move") return bookSheet(me.lessons.find((l) => l.id == id));
+    if (act === "cancel") {
+      const l = me.lessons.find((x) => x.id == id);
+      if (!(await confirmSheet("Cancel lesson?", `${esc(fmtWhen(l.startsAt, tz))}. The lesson goes back on your balance.`, "Cancel lesson"))) return;
+      try { await api("POST", `/c/${slug}/lessons/${id}/cancel`, {}, token); toast("Lesson canceled"); await loadMe(); draw(); }
+      catch (x) { toast(x.message); }
+    }
+  };
+
+  async function buy(pkg, people) {
+    try {
+      const r = await api("POST", `/c/${slug}/checkout`, { packageId: pkg.id, people, offer: pkg.isOffer ? offerToken : undefined }, token);
+      location.href = r.url;
+    } catch (x) { toast(x.message); }
+  }
+
+  function groupSheet(pkg) {
+    const opts = [];
+    for (let n = pkg.minPeople; n <= pkg.maxPeople; n++) opts.push(n);
+    sheet(pkg.name, `
+      <p class="muted">${money(pkg.priceCents)} per person · ${pkg.lessonCount} lesson${pkg.lessonCount > 1 ? "s" : ""}. Count everyone in the group, including you.</p>
+      <label>How many people?</label>
+      <div class="slots" style="margin-top:4px">${opts.map((n) => `<button class="slot" data-n="${n}">${n}</button>`).join("")}</div>
+      <button class="primary block" data-go disabled style="margin-top:16px">Pick a group size</button>`,
+      (body) => {
+        const go = $("[data-go]", body); let people = 0;
+        body.addEventListener("click", (e) => {
+          const b = e.target.closest("[data-n]"); if (!b) return;
+          people = +b.dataset.n;
+          body.querySelectorAll("[data-n]").forEach((x) => x.classList.toggle("on", x === b));
+          go.disabled = false; go.textContent = `Pay ${money(pkg.priceCents * people)} for ${people} people`;
+        });
+        go.onclick = () => { go.disabled = true; buy(pkg, people); };
+      });
+  }
+
+  function quoteSheet() {
+    sheet("Corporate wellness", `<form>
+      <p class="muted">Tell ${esc(coach.name)} about your team and they'll follow up with a custom quote.</p>
+      <div class="fields">
+        <div class="field"><label for="q-name">Your name</label><input id="q-name" name="name" required autocomplete="name"></div>
+        <div class="field"><label for="q-company">Company</label><input id="q-company" name="company" autocomplete="organization"></div>
+        <div class="field"><label for="q-email">Work email</label><input id="q-email" name="email" type="email" required autocomplete="email"></div>
+        <div class="field"><label for="q-phone">Phone</label><input id="q-phone" name="phone" type="tel" autocomplete="tel"></div>
+      </div>
+      <div class="field"><label for="q-size">About how many people?</label><input id="q-size" name="groupSize" placeholder="e.g. 15"></div>
+      <div class="field"><label for="q-msg">What are you looking for?</label><textarea id="q-msg" name="message" placeholder="How often, where, any goals or dates"></textarea></div>
+      <input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
+      <button class="primary block" type="submit">Send request</button><p class="err"></p></form>`, (body, close) => {
+      handleForm($("form", body), async (f) => {
+        await api("POST", `/c/${slug}/inquiries`, f);
+        close(); toast("Request sent. We'll be in touch.");
+      });
+    });
+  }
+
+  function authSheet(after) {
+    let mode = "signup";
+    sheet("Your account", `<div data-auth></div>`, (body, close) => {
+      const el = $("[data-auth]", body);
+      const render = () => {
+        el.innerHTML = `
+          <p class="muted">${mode === "signup" ? `Create an account to buy and book lessons with ${esc(coach.name)}.` : "Welcome back."}</p>
+          <form>
+            ${mode === "signup" ? `<div class="field"><label for="a-name">Name</label><input id="a-name" name="name" autocomplete="name" required></div>
+              <div class="field"><label for="a-phone">Phone</label><input id="a-phone" name="phone" type="tel" autocomplete="tel"></div>` : ""}
+            <div class="field"><label for="a-email">Email</label><input id="a-email" name="email" type="email" autocomplete="email" required></div>
+            <div class="field"><label for="a-pw">Password</label><input id="a-pw" name="password" type="password" autocomplete="${mode === "signup" ? "new-password" : "current-password"}" minlength="8" required></div>
+            <button class="primary block" type="submit">${mode === "signup" ? "Create account" : "Sign in"}</button>
+            <p class="err"></p>
+          </form>
+          <p class="small muted" style="text-align:center">${mode === "signup" ? `Have an account? <a href="#" data-sw>Sign in</a>` : `New here? <a href="#" data-sw>Create an account</a>`}</p>
+          ${mode === "login" ? `<p class="small muted" style="text-align:center">Forgot your password? Ask ${esc(coach.name)} to reset it.</p>` : ""}`;
+        $("[data-sw]", el).onclick = (e) => { e.preventDefault(); mode = mode === "signup" ? "login" : "signup"; render(); };
+        handleForm($("form", el), async (d) => {
+          const r = await api("POST", `/c/${slug}/${mode}`, d);
+          token = r.token; store.set(tokenKey, token);
+          await loadMe(); close(); draw();
+          after && after();
+        });
+      };
+      render();
+    });
+  }
+
+  function bookSheet(moving) {
+    let pick = null;
+    // One choice per kind of lesson the client can book (private, or a group of N).
+    const choices = [];
+    if (!moving) for (const c of me.credits) {
+      const key = c.kind === "group" ? "g" + c.partySize : "p";
+      if (!choices.some((x) => x.key === key)) choices.push({ key, credit: c, label: c.kind === "group" ? groupLabel(c.partySize) : "Private lesson" });
+    }
+    let chosen = choices[0];
+    sheet(moving ? "Reschedule lesson" : "Book a lesson", `
+      ${moving ? `<p class="muted">Currently ${esc(fmtWhen(moving.startsAt, tz))}</p>` : ""}
+      ${choices.length > 1 ? `<label>Which lesson?</label><div class="row" style="margin-bottom:14px">${choices.map((c, i) =>
+        `<button class="slot ${i === 0 ? "on" : ""}" data-kind="${c.key}">${esc(c.label)}</button>`).join("")}</div>` : ""}
+      <div data-picker></div>
+      ${moving ? "" : `<div class="field" style="margin-top:14px"><label for="b-note">Anything to work on? (optional)</label><input id="b-note" maxlength="500"></div>`}
+      <button class="primary block" data-go disabled style="margin-top:14px">Pick a time</button><p class="err"></p>`,
+      (body, close) => {
+        const go = $("[data-go]", body);
+        body.addEventListener("click", (e) => {
+          const k = e.target.closest("[data-kind]"); if (!k) return;
+          chosen = choices.find((c) => c.key === k.dataset.kind);
+          body.querySelectorAll("[data-kind]").forEach((x) => x.classList.toggle("on", x === k));
+        });
+        slotPicker($("[data-picker]", body), tz, coach.maxDaysAhead,
+          (from, days) => api("GET", `/c/${slug}/slots?from=${from}&days=${days}${moving ? "&exclude=" + moving.id : ""}`),
+          (iso) => { pick = iso; go.disabled = false; go.textContent = `${moving ? "Move to" : "Book"} ${fmtWhen(iso, tz)}`; });
+        go.onclick = async () => {
+          go.disabled = true; $(".err", body).textContent = "";
+          try {
+            if (moving) await api("POST", `/c/${slug}/lessons/${moving.id}/reschedule`, { startsAt: pick }, token);
+            else await api("POST", `/c/${slug}/lessons`, { startsAt: pick, note: $("#b-note").value, purchaseId: chosen?.credit.purchaseId }, token);
+            close(); toast(moving ? "Lesson moved" : "Lesson booked"); await loadMe(); draw();
+          } catch (x) { $(".err", body).textContent = x.message; go.disabled = false; }
+        };
+      });
+  }
+}
+
+// ======================================================================
+// Coach dashboard
+// ======================================================================
+async function coachApp() {
+  document.title = "Coach dashboard";
+  let token = store.get("coach");
+  let d = null;
+  let tab = new URLSearchParams(location.search).get("tab") || store.get("coach:tab") || "schedule";
+  const fromStripe = new URLSearchParams(location.search).get("stripe");
+  if (location.search) history.replaceState(null, "", "/admin");
+
+  // Runs after everything below is defined.
+  async function start() {
+    if (!token) return authView();
+    try { await reload(); } catch (e) { if (e.status === 401) { store.set("coach", null); return authView(); } throw e; }
+    if (fromStripe) {
+      try {
+        const r = await api("POST", "/coach/stripe/refresh", {}, token);
+        toast(r.payoutsReady ? "Payouts connected" : "Stripe still needs a few details from you");
+        await reload();
+      } catch (x) { toast(x.message); }
+    }
+    draw();
+  }
+
+  async function reload() { d = await api("GET", "/coach/dashboard", null, token); }
+  const tz = () => d.coach.timezone;
+
+  function authView() {
+    let mode = "login";
+    const render = () => {
+      app.innerHTML = `<header class="top"><div class="wrap"><span class="brand">Coach dashboard</span></div></header>
+        <main class="wrap"><div class="auth card">
+          <h2>${mode === "login" ? "Sign in" : "Create your coach account"}</h2>
+          <form>
+            ${mode === "signup" ? `
+              <div class="field"><label for="c-name">Your name</label><input id="c-name" name="name" required autocomplete="name"></div>
+              <div class="field"><label for="c-slug">Page address</label><div class="row" style="gap:6px;flex-wrap:nowrap"><span class="muted small">${esc(location.host)}/</span><input id="c-slug" name="slug" required pattern="(?:[a-z0-9]|-){3,40}" placeholder="your-name"></div></div>` : ""}
+            <div class="field"><label for="c-email">Email</label><input id="c-email" name="email" type="email" required autocomplete="email"></div>
+            <div class="field"><label for="c-pw">Password</label><input id="c-pw" name="password" type="password" required minlength="${mode === "signup" ? 10 : 1}" autocomplete="${mode === "signup" ? "new-password" : "current-password"}"></div>
+            ${mode === "signup" ? `<div class="field"><label for="c-code">Invite code (not needed for the first account)</label><input id="c-code" name="code"></div>` : ""}
+            <button class="primary block" type="submit">${mode === "login" ? "Sign in" : "Create account"}</button>
+            <p class="err"></p>
+          </form>
+          <p class="small muted" style="text-align:center"><a href="#" data-sw>${mode === "login" ? "New coach? Create an account" : "Have an account? Sign in"}</a></p>
+        </div></main>`;
+      $("[data-sw]").onclick = (e) => { e.preventDefault(); mode = mode === "login" ? "signup" : "login"; render(); };
+      handleForm($("form"), async (f) => {
+        if (mode === "signup") {
+          f.slug = f.slug.toLowerCase();
+          f.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        }
+        const r = await api("POST", `/coach/${mode}`, f);
+        token = r.token; store.set("coach", token);
+        await reload();
+        if (mode === "signup") tab = "settings";
+        draw();
+      });
+    };
+    render();
+  }
+
+  const TABS = [["schedule", "Schedule"], ["clients", "Clients"], ["requests", "Requests"], ["money", "Money"], ["packages", "Packages"], ["availability", "Availability"], ["settings", "Settings"]];
+  const offerUrl = (pkg) => `${location.origin}/${d.coach.slug}?offer=${encodeURIComponent(pkg.offerToken)}`;
+
+  function draw() {
+    store.set("coach:tab", tab);
+    const pageUrl = `${location.origin}/${d.coach.slug}`;
+    const newRequests = d.inquiries.filter((i) => i.status === "new").length;
+    const setupSteps = [
+      [d.packages.length > 0, "Add a lesson package", "packages"],
+      [d.availability.length > 0, "Set your weekly hours", "availability"],
+      [d.coach.payoutsReady || d.paymentsFake, "Connect payouts with Stripe", "money"],
+    ];
+    const todo = setupSteps.filter((s) => !s[0]);
+    app.innerHTML = `
+      <header class="top"><div class="wrap">
+        <span class="brand">${esc(d.coach.name)}</span>
+        <div class="row" style="flex-wrap:nowrap;gap:6px"><a class="btn sm" style="min-height:32px;padding:5px 10px;font-size:13px" href="/${esc(d.coach.slug)}" target="_blank" rel="noopener">My page</a><button class="sm ghost" data-act="logout">Sign out</button></div>
+      </div></header>
+      <main class="wrap">
+        ${todo.length ? `<div class="card" style="margin-top:16px"><h3>Finish setting up</h3>
+          ${todo.map((s) => `<div class="row" style="margin-top:6px"><span>○</span><a href="#" data-tab="${s[2]}">${s[1]}</a></div>`).join("")}
+          <p class="muted small" style="margin:10px 0 0">Your page: <a href="${esc(pageUrl)}" target="_blank" rel="noopener">${esc(pageUrl)}</a></p></div>` : ""}
+        ${d.paymentsFake ? `<div class="banner" style="margin-top:16px">Demo mode: payments are simulated. No real money moves.</div>` : ""}
+        <nav class="tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" class="${tab === k ? "on" : ""}" aria-selected="${tab === k}" data-tab="${k}">${l}${k === "requests" && newRequests ? ` <span class="pill warn">${newRequests}</span>` : ""}</button>`).join("")}</nav>
+        <div id="view"></div>
+      </main>`;
+    const v = $("#view");
+    ({ schedule: viewSchedule, clients: viewClients, requests: viewRequests, money: viewMoney, packages: viewPackages, availability: viewAvailability, settings: viewSettings })[tab](v);
+  }
+
+  async function refresh() { await reload(); draw(); }
+
+  app.onclick = async (e) => {
+    const t = e.target.closest("[data-tab]");
+    if (t) {
+      e.preventDefault(); tab = t.dataset.tab; draw(); window.scrollTo(0, 0);
+      reload().then(() => { if (!document.querySelector(".sheet-bg")) draw(); }).catch(() => {});   // pick up new bookings
+      return;
+    }
+    const b = e.target.closest("[data-act]"); if (!b) return;
+    const act = b.dataset.act, id = b.dataset.id;
+    try {
+      if (act === "logout") { api("POST", "/coach/logout", {}, token).catch(() => {}); store.set("coach", null); token = null; return authView(); }
+      if (act === "close") return closeLesson(id, b.dataset.status);
+      if (act === "coach-move") return moveSheet(d.lessons.find((l) => l.id == id));
+      if (act === "coach-book") { await reload(); return coachBookSheet(id); }
+      if (act === "client") return clientSheet(d.clients.find((c) => c.id == id));
+      if (act === "add-client") return addClientSheet();
+      if (act === "pkg") return packageSheet(id ? d.packages.find((p) => p.id == id) : null);
+      if (act === "pkg-offer") return packageSheet(null, { offer: true });
+      if (act === "refund") return refund(d.purchases.find((p) => p.id == id));
+      if (act === "keep") return keepBalance(d.purchases.find((p) => p.id == id));
+      if (act === "connect") { b.disabled = true; const r = await api("POST", "/coach/stripe/connect", {}, token); location.href = r.url; return; }
+      if (act === "stripe-dash") { const r = await api("GET", "/coach/stripe/dashboard", null, token); window.open(r.url, "_blank", "noopener"); return; }
+      if (act === "send") { b.disabled = true; const r = await api("POST", "/coach/releases/send", {}, token); toast(r.waiting ? "Connect payouts first" : `${r.sent} sent${r.failed ? `, ${r.failed} failed` : ""}`); return refresh(); }
+      if (act === "del-off") { await api("DELETE", `/coach/time-off/${id}`, null, token); return refresh(); }
+      if (act === "starter") { b.disabled = true; await api("POST", "/coach/starter-packages", {}, token); toast("Packages added. Edit any of them to fit."); return refresh(); }
+      if (act === "inq") { await api("PUT", `/coach/inquiries/${id}`, { status: b.dataset.status }, token); return refresh(); }
+      if (act === "offer-for") {
+        const i = d.inquiries.find((x) => x.id == id);
+        return packageSheet(null, { offer: true, offerFor: i.company || i.name, name: `${i.company || i.name} Wellness`, inquiry: i });
+      }
+      if (act === "copy") { navigator.clipboard?.writeText(b.dataset.text); toast("Link copied"); return; }
+    } catch (x) { toast(x.message); b.disabled = false; }
+  };
+
+  // ---------- Schedule ----------
+  function lessonRow(l, closing) {
+    return `<div class="item">
+      <div class="grow"><div class="when">${fmtWhen(l.startsAt, tz())}</div>
+        <div class="muted small"><a href="#" data-act="client" data-id="${l.clientId}">${esc(l.clientName)}</a>${l.kind === "group" ? ` · <span class="pill accent">Group of ${l.partySize}</span>` : ""}${l.note ? " · " + esc(l.note) : ""}</div></div>
+      ${closing ? `
+        <button class="sm primary" data-act="close" data-status="completed" data-id="${l.id}">Done</button>
+        <button class="sm" data-act="close" data-status="no_show" data-id="${l.id}">No-show</button>
+        <button class="sm" data-act="close" data-status="late_cancel" data-id="${l.id}">Late cancel</button>
+        <button class="sm" data-act="close" data-status="canceled" data-id="${l.id}">Canceled</button>` : `
+        <button class="sm" data-act="coach-move" data-id="${l.id}">Move</button>
+        <button class="sm" data-act="close" data-status="late_cancel" data-id="${l.id}" title="Client canceled too late; counts as used">Late cancel</button>
+        <button class="sm danger" data-act="close" data-status="canceled" data-id="${l.id}">Cancel</button>`}
+    </div>`;
+  }
+  function viewSchedule(v) {
+    const now = Date.now();
+    const booked = d.lessons.filter((l) => l.status === "booked");
+    const toClose = booked.filter((l) => Date.parse(l.startsAt) <= now);
+    const upcoming = booked.filter((l) => Date.parse(l.startsAt) > now);
+    const groups = {};
+    for (const l of upcoming) (groups[localDate(Date.parse(l.startsAt), tz())] ||= []).push(l);
+    const recent = d.lessons.filter((l) => l.status !== "booked" && Date.parse(l.startsAt) <= now).reverse().slice(0, 15);
+    v.innerHTML = `
+      ${toClose.length ? `<div class="section" style="margin-top:0"><h2>Close out <span class="pill warn">${toClose.length}</span></h2>
+        <p class="muted small">Marking a lesson done, no-show or late cancel releases that lesson's share of the package to you.</p>
+        <div class="list">${toClose.map((l) => lessonRow(l, true)).join("")}</div></div>` : ""}
+      <div class="section" style="margin-top:0">
+        <div class="row spread"><h2 style="margin:0">Upcoming</h2><button class="sm primary" data-act="coach-book">Book for a client</button></div>
+        <div style="margin-top:12px">${Object.keys(groups).length ? Object.entries(groups).map(([day, ls]) => `
+          <h3 class="muted" style="margin:16px 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.04em">${fmtDay(ls[0].startsAt, tz())}</h3>
+          <div class="list">${ls.map((l) => lessonRow(l, false)).join("")}</div>`).join("") : `<div class="list"><div class="empty">No upcoming lessons.</div></div>`}</div>
+      </div>
+      ${recent.length ? `<div class="section"><h2>Recent</h2><div class="list">${recent.map((l) => `
+        <div class="item"><div class="grow"><div>${fmtWhen(l.startsAt, tz())}</div><div class="muted small">${esc(l.clientName)}</div></div>
+        ${statusPill(l.status)}${l.releaseStatus === "sent" ? `<span class="pill ok">Paid out</span>` : l.releaseStatus === "pending" || l.releaseStatus === "failed" ? `<span class="pill warn">Payout ${l.releaseStatus === "failed" ? "failed" : "waiting"}</span>` : ""}</div>`).join("")}</div></div>` : ""}`;
+  }
+
+  async function closeLesson(id, status) {
+    const l = d.lessons.find((x) => x.id == id);
+    const msgs = {
+      completed: "Mark this lesson done? Its share of the package is released to you.",
+      no_show: "Mark as a no-show? The lesson counts as used and its share is released to you.",
+      late_cancel: "Mark as a late cancel? The lesson counts as used and its share is released to you.",
+      canceled: "Cancel this lesson? It goes back on the client's balance and nothing is released.",
+    };
+    if (!(await confirmSheet(STATUS[status][0], `<strong>${esc(l.clientName)}</strong> · ${esc(fmtWhen(l.startsAt, tz()))}<br><br>${msgs[status]}`, "Confirm"))) return;
+    try {
+      const r = await api("POST", `/coach/lessons/${id}/status`, { status }, token);
+      toast(r.sent?.sent ? "Done. Payout sent" : r.sent?.waiting ? "Done. Payout waits until you connect Stripe" : "Saved");
+      refresh();
+    } catch (x) { toast(x.message); }
+  }
+
+  function moveSheet(l) {
+    sheet("Move lesson", `<form>
+      <p class="muted">${esc(l.clientName)} · now ${esc(fmtWhen(l.startsAt, tz()))}</p>
+      <div class="field"><label for="m-when">New time (${esc(tzLabel(tz()))})</label><input id="m-when" name="when" type="datetime-local" required value="${toLocalInput(Date.parse(l.startsAt), tz())}"></div>
+      <p class="muted small">As the coach you can pick any time, including outside your regular hours.</p>
+      <button class="primary block" type="submit">Move lesson</button><p class="err"></p></form>`, (body, close) => {
+      handleForm($("form", body), async (f) => {
+        await api("POST", `/coach/lessons/${l.id}/reschedule`, { startsAt: new Date(zonedToUtc(f.when, tz())).toISOString() }, token);
+        close(); toast("Lesson moved"); refresh();
+      });
+    });
+  }
+
+  function coachBookSheet(clientId) {
+    const withCredits = d.clients.filter((c) => c.credits > 0);
+    if (!withCredits.length) return toast("No clients have lessons left. Add a package to a client first.");
+    sheet("Book for a client", `<form>
+      <div class="field"><label for="cb-client">Client</label><select id="cb-client" name="clientId" required>
+        ${withCredits.map((c) => `<option value="${c.id}" ${c.id == clientId ? "selected" : ""}>${esc(c.name)} (${c.credits} left)</option>`).join("")}</select></div>
+      <div class="field"><label for="cb-when">Time (${esc(tzLabel(tz()))})</label><input id="cb-when" name="when" type="datetime-local" required></div>
+      <div class="field"><label for="cb-note">Note</label><input id="cb-note" name="note" maxlength="500"></div>
+      <p class="muted small">Pick a past time to log a lesson that already happened.</p>
+      <button class="primary block" type="submit">Book</button><p class="err"></p></form>`, (body, close) => {
+      handleForm($("form", body), async (f) => {
+        await api("POST", "/coach/lessons", { clientId: +f.clientId, startsAt: new Date(zonedToUtc(f.when, tz())).toISOString(), note: f.note }, token);
+        close(); toast("Lesson booked"); refresh();
+      });
+    });
+  }
+
+  // ---------- Clients ----------
+  function viewClients(v) {
+    v.innerHTML = `<div class="row spread" style="margin-bottom:12px"><h2 style="margin:0">Clients <span class="pill">${d.clients.length}</span></h2>
+      <button class="sm primary" data-act="add-client">Add client</button></div>
+      <input type="search" placeholder="Search clients" id="cl-search" style="margin-bottom:12px" aria-label="Search clients">
+      <div class="list" id="cl-list"></div>`;
+    const list = $("#cl-list", v);
+    const render = (qs = "") => {
+      const rows = d.clients.filter((c) => (c.name + c.email).toLowerCase().includes(qs.toLowerCase()));
+      list.innerHTML = rows.length ? rows.map((c) => `
+        <div class="item" style="cursor:pointer" data-act="client" data-id="${c.id}">
+          <div class="grow"><div class="when">${esc(c.name)}</div><div class="muted small">${esc(c.email)}${c.phone ? " · " + esc(c.phone) : ""}</div></div>
+          <div style="text-align:right"><span class="pill ${c.credits ? "accent" : ""}">${c.credits} left</span>
+          ${c.nextLesson ? `<div class="muted small">Next ${fmtDay(c.nextLesson, tz())}</div>` : ""}</div>
+        </div>`).join("") : `<div class="empty">${d.clients.length ? "No matches." : "No clients yet. Share your page link so clients can sign up."}</div>`;
+    };
+    $("#cl-search", v).oninput = (e) => render(e.target.value);
+    render();
+  }
+
+  function clientSheet(c) {
+    const ps = d.purchases.filter((p) => p.clientId === c.id);
+    const ls = d.lessons.filter((l) => l.clientId === c.id).sort((a, b) => b.startsAt.localeCompare(a.startsAt)).slice(0, 12);
+    sheet(c.name, `
+      <p class="muted">${esc(c.email)}${c.phone ? " · " + esc(c.phone) : ""}<br>${c.credits} lesson${c.credits === 1 ? "" : "s"} left</p>
+      <div class="row" style="margin-bottom:14px">
+        ${c.credits ? `<button class="sm primary" data-cb>Book a lesson</button>` : ""}
+        <button class="sm" data-offline>Add package paid in person</button>
+      </div>
+      <h3>Packages</h3>
+      <div class="list" style="margin-bottom:14px">${ps.length ? ps.map((p) => `<div class="item"><div class="grow">${esc(p.packageName)}<div class="muted small">${p.lessonsUsed}/${p.lessonsTotal} used · ${money(p.amountCents)} ${p.method === "offline" ? "paid in person" : "by card"}${p.expiresAt ? " · use by " + fmtDate(p.expiresAt, tz()) : ""}</div></div>${p.status === "refunded" ? `<span class="pill">Refunded</span>` : ""}</div>`).join("") : `<div class="empty">None yet.</div>`}</div>
+      <h3>Lessons</h3>
+      <div class="list" style="margin-bottom:14px">${ls.length ? ls.map((l) => `<div class="item"><div class="grow">${fmtWhen(l.startsAt, tz())}</div>${statusPill(l.status)}</div>`).join("") : `<div class="empty">None yet.</div>`}</div>
+      <form data-notes><div class="field"><label for="cn">Private notes</label><textarea id="cn" name="notes">${esc(c.notes)}</textarea></div>
+        <button class="sm" type="submit">Save notes</button><p class="err"></p></form>
+      <details style="margin-top:10px"><summary class="small muted">Reset password</summary>
+        <form data-pw style="margin-top:8px"><div class="field"><label for="cpw">New temporary password (tell the client)</label><input id="cpw" name="tempPassword" minlength="8" required></div>
+        <button class="sm" type="submit">Set password</button><p class="err"></p></form></details>`,
+      (body, close) => {
+        handleForm($("[data-notes]", body), async (f) => { await api("PUT", `/coach/clients/${c.id}`, f, token); c.notes = f.notes; toast("Notes saved"); });
+        handleForm($("[data-pw]", body), async (f) => { await api("PUT", `/coach/clients/${c.id}`, f, token); toast("Password reset. Client is signed out everywhere."); close(); });
+        const cb = $("[data-cb]", body); if (cb) cb.onclick = () => { close(); coachBookSheet(c.id); };
+        $("[data-offline]", body).onclick = () => { close(); offlineSheet(c); };
+      });
+  }
+
+  function offlineSheet(c) {
+    if (!d.packages.length) return toast("Create a package first.");
+    sheet("Package paid in person", `<form>
+      <p class="muted">For cash, Zelle or Venmo. ${esc(c.name)} gets the lessons; nothing is held since you already have the money.</p>
+      <div class="field"><label for="op-pkg">Package</label><select id="op-pkg" name="packageId">${d.packages.map((p) => `<option value="${p.id}">${esc(p.name)}: ${p.lessonCount} lesson${p.lessonCount > 1 ? "s" : ""}, ${money(p.priceCents)}${p.kind === "group" ? " per person" : ""}</option>`).join("")}</select></div>
+      <div class="field" id="op-ppl-f"><label for="op-ppl">People in the group</label><input id="op-ppl" name="people" type="number"></div>
+      <div class="field"><label for="op-amt">Amount received ($)</label><input id="op-amt" name="amount" type="number" min="0" step="0.01"></div>
+      <button class="primary block" type="submit">Add package</button><p class="err"></p></form>`, (body, close) => {
+      const sync = (resetPeople) => {
+        const pkg = d.packages.find((p) => p.id == $("#op-pkg").value);
+        const isGroup = pkg.kind === "group";
+        $("#op-ppl-f").classList.toggle("hidden", !isGroup);
+        if (resetPeople) Object.assign($("#op-ppl"), { min: pkg.minPeople, max: pkg.maxPeople, value: pkg.minPeople });
+        const people = isGroup ? +$("#op-ppl").value || pkg.minPeople : 1;
+        $("#op-amt").value = (pkg.priceCents * people / 100).toFixed(2);
+      };
+      $("#op-pkg").onchange = () => sync(true);
+      $("#op-ppl").oninput = () => sync(false);
+      sync(true);
+      handleForm($("form", body), async (f) => {
+        await api("POST", "/coach/purchases/offline", { clientId: c.id, packageId: +f.packageId, people: f.people ? +f.people : undefined, amountCents: Math.round(parseFloat(f.amount) * 100) }, token);
+        close(); toast("Package added"); refresh();
+      });
+    });
+  }
+
+  function addClientSheet() {
+    sheet("Add client", `<form>
+      <div class="field"><label for="ac-name">Name</label><input id="ac-name" name="name" required></div>
+      <div class="field"><label for="ac-email">Email</label><input id="ac-email" name="email" type="email" required></div>
+      <div class="field"><label for="ac-phone">Phone</label><input id="ac-phone" name="phone" type="tel"></div>
+      <div class="field"><label for="ac-pw">Temporary password (share it with them)</label><input id="ac-pw" name="tempPassword" minlength="8" required></div>
+      <button class="primary block" type="submit">Add client</button><p class="err"></p></form>`, (body, close) => {
+      handleForm($("form", body), async (f) => { await api("POST", "/coach/clients", f, token); close(); toast("Client added"); refresh(); });
+    });
+  }
+
+  // ---------- Money ----------
+  function viewMoney(v) {
+    const m = d.money;
+    const held = d.purchases.filter((p) => p.heldCents > 0);
+    const expired = held.filter((p) => p.expiresAt && Date.parse(p.expiresAt) < Date.now());
+    const stripeBlock = !d.paymentsReady ? `<p style="margin:0">Card payments aren't turned on. The site owner needs to add the Stripe keys.</p>`
+      : d.coach.payoutsReady ? `<div class="row spread"><div><span class="pill ok">Connected</span> <span class="muted small">Released money goes to your bank on Stripe's daily schedule.</span></div><button class="sm" data-act="stripe-dash">Stripe dashboard</button></div>`
+      : `<div class="row spread"><div class="grow"><strong>Connect your bank to get paid.</strong><div class="muted small">Stripe asks for your bank account and identity details. Released lessons wait here until it's connected.</div></div><button class="primary" data-act="connect">${d.coach.stripeConnected ? "Finish Stripe setup" : "Connect payouts"}</button></div>`;
+    v.innerHTML = `
+      <div class="stats">
+        <div class="card stat"><div class="l">Held for future lessons</div><div class="n">${money(m.heldCents)}</div><div class="muted small">Paid by clients, not yet earned</div></div>
+        <div class="card stat"><div class="l">Paid out this month</div><div class="n">${money(m.sentMonthCents)}</div><div class="muted small">${money(m.sentTotalCents)} all time</div></div>
+        <div class="card stat"><div class="l">On its way</div><div class="n">${money(m.releasingCents)}</div><div class="muted small">${m.releasingCents ? `<a href="#" data-act="send">Send now</a>` : "Nothing waiting"}</div></div>
+        <div class="card stat"><div class="l">Paid in person this month</div><div class="n">${money(m.offlineMonthCents)}</div><div class="muted small">Cash, Zelle, Venmo</div></div>
+      </div>
+      <div class="card" style="margin-top:14px">${stripeBlock}</div>
+      ${expired.length ? `<div class="banner" style="margin-top:14px">${expired.length} expired package${expired.length > 1 ? "s" : ""} still ${expired.length > 1 ? "have" : "has"} money held. Refund it or keep it below.</div>` : ""}
+      <div class="section"><h2>Packages with money held</h2>
+        <div class="list">${held.length ? held.map((p) => {
+          const expired = p.expiresAt && Date.parse(p.expiresAt) < Date.now();
+          return `<div class="item">
+            <div class="grow"><div class="when">${esc(p.clientName)} · ${money(p.heldCents)} held</div>
+              <div class="muted small">${esc(p.packageName)} · ${p.lessonsUsed}/${p.lessonsTotal} lessons used · ${money(p.amountCents)} paid${p.expiresAt ? ` · use by ${fmtDate(p.expiresAt, tz())}` : ""}</div></div>
+            ${expired ? `<span class="pill warn">Expired</span><button class="sm" data-act="keep" data-id="${p.id}">Keep</button>` : ""}
+            <button class="sm danger" data-act="refund" data-id="${p.id}">Refund</button></div>`;
+        }).join("") : `<div class="empty">Nothing held right now.</div>`}</div>
+      </div>
+      <div class="section"><h2>Payout history</h2>
+        <div class="list">${d.releases.length ? d.releases.map((r) => `<div class="item">
+          <div class="grow"><div class="when">${money(r.amountCents - r.feeCents)} · ${esc(r.clientName)}</div>
+            <div class="muted small">${r.kind === "forfeit" ? "Unused balance kept" : r.lessonAt ? "Lesson " + fmtDay(r.lessonAt, tz()) : "Lesson"} · ${esc(r.packageName)}${r.feeCents ? ` · ${money(r.feeCents)} fee` : ""} · ${fmtDate(r.sentAt || r.createdAt, tz())}</div>
+            ${r.status === "failed" ? `<div class="small" style="color:var(--danger)">${esc(r.error)}</div>` : ""}</div>
+          ${{ sent: `<span class="pill ok">Paid out</span>`, pending: `<span class="pill warn">Waiting</span>`, failed: `<span class="pill danger">Failed</span>`, not_held: `<span class="pill">Paid in person</span>` }[r.status]}
+        </div>`).join("") : `<div class="empty">Payouts show up here as you close out lessons.</div>`}</div>
+      </div>
+      <div class="card small muted">
+        <h3 style="color:var(--text)">How the hold works</h3>
+        <p>When a client buys a package by card, the money stays with Stripe instead of landing in your account all at once.</p>
+        <p>Each time you mark a lesson <em>Done</em>, <em>No-show</em> or <em>Late cancel</em>, that lesson's share (package price ÷ lessons) is sent to your bank.</p>
+        <p style="margin:0">If a package expires with lessons unused, you choose: <em>Keep</em> the rest or <em>Refund</em> it to the client.</p>
+      </div>`;
+  }
+
+  async function refund(p) {
+    if (!(await confirmSheet("Refund package?", `${esc(p.clientName)} · ${esc(p.packageName)}<br><br>Refunds the <strong>${money(p.heldCents)}</strong> still held${p.method === "card" ? " to their card" : ""} and cancels any upcoming lessons from this package. Lessons already done stay paid to you.`, "Refund"))) return;
+    try { const r = await api("POST", `/coach/purchases/${p.id}/refund`, {}, token); toast(`Refunded ${money(r.refundedCents)}`); refresh(); }
+    catch (x) { toast(x.message); }
+  }
+  async function keepBalance(p) {
+    if (!(await confirmSheet("Keep unused balance?", `${esc(p.clientName)}'s package expired with ${money(p.heldCents)} unused. Release it to you?`, "Keep it"))) return;
+    try { await api("POST", `/coach/purchases/${p.id}/keep-balance`, {}, token); toast("Released to you"); refresh(); }
+    catch (x) { toast(x.message); }
+  }
+
+  // ---------- Requests (corporate wellness quotes) ----------
+  function viewRequests(v) {
+    const label = { new: ["New", "warn"], replied: ["Replied", "ok"], closed: ["Closed", ""] };
+    v.innerHTML = `<div class="row spread" style="margin-bottom:12px"><h2 style="margin:0">Quote requests</h2>
+        <button class="sm" data-act="pkg-offer">New private offer</button></div>
+      <p class="muted small">From the Corporate wellness form on your page. Reply by email, then send a private offer link they can pay online.</p>
+      <div class="list">${d.inquiries.length ? d.inquiries.map((i) => `
+        <div class="item" style="align-items:flex-start">
+          <div class="grow">
+            <div class="when">${esc(i.name)}${i.company ? ` · ${esc(i.company)}` : ""} <span class="pill ${label[i.status][1]}">${label[i.status][0]}</span></div>
+            <div class="muted small"><a href="mailto:${esc(i.email)}">${esc(i.email)}</a>${i.phone ? ` · <a href="tel:${esc(i.phone)}">${esc(i.phone)}</a>` : ""}${i.groupSize ? ` · about ${esc(i.groupSize)} people` : ""} · ${fmtDate(i.createdAt, tz())}</div>
+            ${i.message ? `<p style="margin:8px 0 0;white-space:pre-line">${esc(i.message)}</p>` : ""}
+            <div class="row" style="margin-top:10px">
+              <button class="sm primary" data-act="offer-for" data-id="${i.id}">Create offer</button>
+              ${i.status === "new" ? `<button class="sm" data-act="inq" data-status="replied" data-id="${i.id}">Mark replied</button>` : ""}
+              ${i.status !== "closed" ? `<button class="sm ghost" data-act="inq" data-status="closed" data-id="${i.id}">Close</button>` : `<button class="sm ghost" data-act="inq" data-status="new" data-id="${i.id}">Reopen</button>`}
+            </div>
+          </div>
+        </div>`).join("") : `<div class="empty">No requests yet. They show up here when a company fills in the Corporate wellness form.</div>`}</div>`;
+  }
+
+  function offerLinkSheet(pkg, inquiry) {
+    const url = offerUrl(pkg);
+    const subject = `${pkg.name}: your quote`;
+    const bodyText = `Hi ${inquiry ? inquiry.name.split(" ")[0] : ""},\n\nHere's your custom package: ${pkg.name}, ${pkg.lessonCount} session${pkg.lessonCount > 1 ? "s" : ""} for ${money(pkg.priceCents)}${pkg.kind === "group" ? " per person" : ""}.\n\nYou can review it and pay securely here:\n${url}\n\nThanks,\n${d.coach.name}`;
+    sheet("Offer ready", `
+      <p>Send this link to ${inquiry ? esc(inquiry.name) : "your client"}. Only people with the link can see the offer.</p>
+      <input readonly value="${esc(url)}" onclick="this.select()" style="margin-bottom:12px">
+      <div class="row">
+        <button class="primary" data-act="copy" data-text="${esc(url)}">Copy link</button>
+        ${inquiry ? `<a class="btn" href="mailto:${esc(inquiry.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}">Email it</a>` : ""}
+      </div>`, (body) => {
+      $("[data-act=copy]", body).onclick = () => { navigator.clipboard?.writeText(url); toast("Link copied"); };
+    });
+  }
+
+  // ---------- Packages ----------
+  function viewPackages(v) {
+    const card = (p) => `
+        <div class="card pkg" style="${p.active ? "" : "opacity:.6"}">
+          <div class="row spread"><h3 style="margin:0">${esc(p.name)}</h3>${p.active ? "" : `<span class="pill">Hidden</span>`}</div>
+          ${p.isOffer ? `<div><span class="pill accent">Private offer${p.offerFor ? " · " + esc(p.offerFor) : ""}</span></div>` : ""}
+          <div class="price">${money(p.priceCents)}${p.kind === "group" ? ` <span class="muted" style="font-size:15px;font-weight:500">per person</span>` : ""}</div>
+          <p class="muted small">${p.kind === "group" ? `${p.minPeople}–${p.maxPeople} people · ` : ""}${p.lessonCount} lesson${p.lessonCount > 1 ? "s" : ""}${p.kind === "group" ? "" : ` · ${money(Math.floor(p.priceCents / p.lessonCount))} per lesson`} · ${p.expiresDays}-day use-by</p>
+          <p class="desc small" style="white-space:pre-line">${esc(p.description)}</p>
+          <div class="row"><button class="sm" data-act="pkg" data-id="${p.id}">Edit</button>
+          ${p.isOffer ? `<button class="sm" data-act="copy" data-text="${esc(offerUrl(p))}">Copy offer link</button>` : ""}</div>
+        </div>`;
+    const pub = d.packages.filter((p) => !p.isOffer), offers = d.packages.filter((p) => p.isOffer);
+    v.innerHTML = `<div class="row spread" style="margin-bottom:12px"><h2 style="margin:0">Packages</h2><button class="sm primary" data-act="pkg">New package</button></div>
+      ${pub.length ? `<div class="grid">${pub.map(card).join("")}</div>` : `<div class="card"><h3>Start with your pricing</h3>
+        <p class="muted">Adds Single $125, 5-Pack $575 ($115 each), 10-Pack $1,000 ($100 each), and Small Group at $50 per person for 3–6 people. You can edit any of them.</p>
+        <button class="primary" data-act="starter">Add these packages</button></div>`}
+      ${offers.length ? `<h2 style="margin-top:28px">Private offers</h2><p class="muted small">Only people with the link can see and buy these.</p><div class="grid">${offers.map(card).join("")}</div>` : ""}
+      <p class="muted small" style="margin-top:14px">Keep use-by at 90 days or less: Stripe can only hold card payments for a limited time.</p>`;
+  }
+
+  function packageSheet(p, preset = {}) {
+    const isOffer = p ? p.isOffer : Boolean(preset.offer);
+    const kind = p?.kind || "private";
+    sheet(p ? "Edit package" : isOffer ? "New private offer" : "New package", `<form>
+      ${isOffer ? `<p class="muted small">A private offer doesn't show on your page. You send the link to the client, and only they can buy it.</p>` : ""}
+      ${preset.inquiry ? `<div class="banner info small">${esc(preset.inquiry.name)}${preset.inquiry.company ? ", " + esc(preset.inquiry.company) : ""}${preset.inquiry.groupSize ? " · about " + esc(preset.inquiry.groupSize) + " people" : ""}</div>` : ""}
+      <div class="field"><label for="pk-name">Name</label><input id="pk-name" name="name" required value="${esc(p?.name || preset.name || "")}" placeholder="5-Lesson Pack"></div>
+      ${isOffer ? `<div class="field"><label for="pk-for">Who it's for (only you see this)</label><input id="pk-for" name="offerFor" value="${esc(p?.offerFor || preset.offerFor || "")}" placeholder="Acme Corp"></div>` : ""}
+      <div class="field"><label for="pk-kind">Type</label><select id="pk-kind" name="kind">
+        <option value="private" ${kind === "private" ? "selected" : ""}>Private lessons: one price for the package</option>
+        <option value="group" ${kind === "group" ? "selected" : ""}>Small group: price is per person</option></select></div>
+      <div class="fields" id="pk-group" ${kind === "group" ? "" : 'style="display:none"'}>
+        <div class="field"><label for="pk-min">Min people</label><input id="pk-min" name="minPeople" type="number" min="2" max="100" value="${p?.kind === "group" ? p.minPeople : 3}"></div>
+        <div class="field"><label for="pk-max">Max people</label><input id="pk-max" name="maxPeople" type="number" min="2" max="100" value="${p?.kind === "group" ? p.maxPeople : 6}"></div>
+      </div>
+      <div class="fields">
+        <div class="field"><label for="pk-n">Lessons</label><input id="pk-n" name="lessonCount" type="number" min="1" max="100" required value="${p?.lessonCount || (isOffer ? 4 : 5)}"></div>
+        <div class="field"><label for="pk-price" id="pk-price-l">${kind === "group" ? "Price per person ($)" : "Total price ($)"}</label><input id="pk-price" name="price" type="number" min="1" step="0.01" required value="${p ? (p.priceCents / 100).toFixed(2) : ""}"></div>
+        <div class="field"><label for="pk-exp">Use within (days)</label><input id="pk-exp" name="expiresDays" type="number" min="7" max="365" required value="${p?.expiresDays || 90}"></div>
+      </div>
+      <div class="field"><label for="pk-desc">Description</label><textarea id="pk-desc" name="description" maxlength="1000">${esc(p?.description || "")}</textarea></div>
+      ${p ? `<div class="field"><label><input type="checkbox" name="active" ${p.active ? "checked" : ""} style="width:auto"> Show on my page</label></div>` : ""}
+      <p class="muted small">Changes apply to new purchases only. Packages already bought keep their original terms.</p>
+      <button class="primary block" type="submit">${p ? "Save" : isOffer ? "Create offer" : "Create package"}</button><p class="err"></p></form>`, (body, close) => {
+      $("#pk-kind").onchange = (e) => {
+        const g = e.target.value === "group";
+        $("#pk-group").style.display = g ? "" : "none";
+        $("#pk-price-l").textContent = g ? "Price per person ($)" : "Total price ($)";
+      };
+      handleForm($("form", body), async (f) => {
+        const payload = { name: f.name, description: f.description, lessonCount: +f.lessonCount, priceCents: Math.round(parseFloat(f.price) * 100),
+          expiresDays: +f.expiresDays, active: p ? f.active === "on" : true, sortOrder: p?.sortOrder || 0,
+          kind: f.kind, minPeople: +f.minPeople, maxPeople: +f.maxPeople, offer: isOffer, offerFor: f.offerFor };
+        const r = await api(p ? "PUT" : "POST", p ? `/coach/packages/${p.id}` : "/coach/packages", payload, token);
+        if (preset.inquiry) await api("PUT", `/coach/inquiries/${preset.inquiry.id}`, { status: "replied" }, token);
+        close(); await refresh();
+        if (!p && isOffer) offerLinkSheet(r.package, preset.inquiry);
+        else toast("Package saved");
+      });
+    });
+  }
+
+  // ---------- Availability ----------
+  function viewAvailability(v) {
+    let wins = d.availability.map((w) => ({ ...w }));
+    const render = () => {
+      v.innerHTML = `
+        <h2>Weekly hours</h2>
+        <p class="muted small">Clients can book ${d.coach.lessonMinutes}-minute lessons starting every ${d.coach.slotStepMinutes} minutes inside these windows. Times are ${esc(tzLabel(tz()))}.</p>
+        <div class="card" id="av">${[1, 2, 3, 4, 5, 6, 0].map((wd) => `
+          <div class="avail-day"><strong style="padding-top:8px">${DOW[wd]}</strong><div>
+            ${wins.map((w, i) => w.weekday === wd ? `<div class="win"><input type="time" value="${minToTime(w.startMin)}" data-i="${i}" data-k="startMin" aria-label="${DOW[wd]} start"><span class="muted">–</span><input type="time" value="${minToTime(w.endMin === 1440 ? 1439 : w.endMin)}" data-i="${i}" data-k="endMin" aria-label="${DOW[wd]} end"><button class="sm ghost" data-rm="${i}" aria-label="Remove">✕</button></div>` : "").join("")}
+            <button class="sm ghost" data-add="${wd}">+ Add hours</button>
+          </div></div>`).join("")}
+        </div>
+        <div class="row" style="margin-top:12px"><button class="primary" id="av-save">Save hours</button><span class="err" id="av-err"></span></div>
+
+        <div class="section"><h2>Time off</h2>
+          <p class="muted small">Blocks booking. Existing lessons in this range aren't canceled; move or cancel them from Schedule.</p>
+          <form class="card" id="off-form"><div class="fields">
+            <div class="field"><label for="off-s">First day off</label><input id="off-s" name="start" type="date" required></div>
+            <div class="field"><label for="off-e">Last day off</label><input id="off-e" name="end" type="date" required></div>
+            <div class="field"><label for="off-n">Note</label><input id="off-n" name="note" placeholder="Vacation"></div>
+          </div><button class="sm primary" type="submit">Add time off</button><p class="err"></p></form>
+          <div class="list" style="margin-top:12px">${d.timeOff.length ? d.timeOff.map((o) => `<div class="item"><div class="grow">${fmtDate(o.startsAt, tz())} – ${fmtDate(Date.parse(o.endsAt) - 1, tz())}${o.note ? ` <span class="muted">· ${esc(o.note)}</span>` : ""}</div><button class="sm" data-act="del-off" data-id="${o.id}">Remove</button></div>`).join("") : `<div class="empty">No time off scheduled.</div>`}</div>
+        </div>`;
+      $("#av", v).oninput = (e) => {
+        const i = e.target.dataset.i; if (i === undefined) return;
+        wins[i][e.target.dataset.k] = e.target.value ? timeToMin(e.target.value) : 0;
+      };
+      $("#av", v).onclick = (e) => {
+        const add = e.target.closest("[data-add]"), rm = e.target.closest("[data-rm]");
+        if (add) { wins.push({ weekday: +add.dataset.add, startMin: 540, endMin: 1020 }); render(); }
+        if (rm) { wins.splice(+rm.dataset.rm, 1); render(); }
+      };
+      $("#av-save", v).onclick = async (e) => {
+        const bad = wins.find((w) => w.endMin <= w.startMin);
+        if (bad) { $("#av-err").textContent = `${DOW[bad.weekday]}: end time must be after the start.`; return; }
+        e.target.disabled = true;
+        try { await api("PUT", "/coach/availability", { windows: wins }, token); toast("Hours saved"); await refresh(); }
+        catch (x) { $("#av-err").textContent = x.message; e.target.disabled = false; }
+      };
+      handleForm($("#off-form", v), async (f) => {
+        if (f.end < f.start) throw new Error("The last day has to be on or after the first.");
+        await api("POST", "/coach/time-off", { startsAt: new Date(zonedToUtc(f.start + "T00:00", tz())).toISOString(), endsAt: new Date(zonedToUtc(addDays(f.end, 1) + "T00:00", tz())).toISOString(), note: f.note }, token);
+        toast("Time off added"); refresh();
+      });
+    };
+    render();
+  }
+
+  // ---------- Settings ----------
+  function viewSettings(v) {
+    const c = d.coach;
+    const zones = (Intl.supportedValuesOf ? Intl.supportedValuesOf("timeZone") : [c.timezone]).filter((z) => /^(America|Pacific|US|Europe|Australia|Asia|Africa|Atlantic)\//.test(z) || z === c.timezone);
+    const pageUrl = `${location.origin}/${c.slug}`;
+    v.innerHTML = `<form class="stack">
+      <div class="card">
+        <h2>Your page</h2>
+        <div class="row" style="margin-bottom:12px"><a href="${esc(pageUrl)}" target="_blank" rel="noopener" class="grow" style="word-break:break-all">${esc(pageUrl)}</a><button type="button" class="sm" data-act="copy" data-text="${esc(pageUrl)}">Copy link</button></div>
+        <div class="fields">
+          <div class="field"><label for="s-name">Name</label><input id="s-name" name="name" value="${esc(c.name)}" required></div>
+          <div class="field"><label for="s-slug">Page address</label><input id="s-slug" name="slug" value="${esc(c.slug)}" pattern="(?:[a-z0-9]|-){3,40}" required></div>
+        </div>
+        <div class="field"><label for="s-head">Headline</label><input id="s-head" name="headline" value="${esc(c.headline)}" placeholder="Private tennis lessons for all levels" maxlength="140"></div>
+        <div class="field"><label for="s-loc">Location</label><input id="s-loc" name="location" value="${esc(c.location)}" placeholder="Austin, TX" maxlength="140"></div>
+        <div class="field"><label for="s-bio">About you</label><textarea id="s-bio" name="bio" maxlength="4000">${esc(c.bio)}</textarea></div>
+      </div>
+      <div class="card">
+        <h2>Booking rules</h2>
+        <div class="fields">
+          <div class="field"><label for="s-len">Lesson length (min)</label><input id="s-len" name="lessonMinutes" type="number" min="15" max="240" value="${c.lessonMinutes}"></div>
+          <div class="field"><label for="s-step">Start times every (min)</label><input id="s-step" name="slotStepMinutes" type="number" min="5" max="240" value="${c.slotStepMinutes}"></div>
+          <div class="field"><label for="s-buf">Break between lessons (min)</label><input id="s-buf" name="bufferMinutes" type="number" min="0" max="120" value="${c.bufferMinutes}"></div>
+          <div class="field"><label for="s-cw">Free cancel/reschedule until (hours before)</label><input id="s-cw" name="cancelWindowHours" type="number" min="0" max="168" value="${c.cancelWindowHours}"></div>
+          <div class="field"><label for="s-mn">Minimum notice to book (hours)</label><input id="s-mn" name="minNoticeHours" type="number" min="0" max="168" value="${c.minNoticeHours}"></div>
+          <div class="field"><label for="s-mx">Book up to (days ahead)</label><input id="s-mx" name="maxDaysAhead" type="number" min="1" max="365" value="${c.maxDaysAhead}"></div>
+        </div>
+        <div class="field"><label for="s-tz">Time zone</label><select id="s-tz" name="timezone">${zones.map((z) => `<option ${z === c.timezone ? "selected" : ""}>${esc(z)}</option>`).join("")}</select></div>
+      </div>
+      <div class="row"><button class="primary" type="submit">Save settings</button><p class="err" style="margin:0"></p></div>
+    </form>`;
+    handleForm($("form", v), async (f) => {
+      await api("PUT", "/coach/profile", f, token);
+      toast("Settings saved"); refresh();
+    });
+  }
+
+  return start();
+}
+
+window.addEventListener("popstate", route);
+route();
+</script>
+</body>
+</html>
