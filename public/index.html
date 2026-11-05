@@ -4,36 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Coach Booking</title>
-<meta name="theme-color" content="#0f766e">
+<meta name="theme-color" content="#161719">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #f6f7f5; --surface: #ffffff; --surface-2: #f0f2ef; --border: #e2e5e0;
-  --text: #16201d; --muted: #5d6a65; --accent: #0f766e; --accent-ink: #ffffff; --accent-soft: #e3f2ef;
-  --warn: #b45309; --warn-soft: #fdf3e2; --danger: #b42318; --danger-soft: #fdecea; --ok: #15803d; --ok-soft: #e7f6ec;
-  --radius: 14px; --shadow: 0 1px 2px rgba(16,24,20,.06), 0 4px 16px rgba(16,24,20,.05);
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0e1412; --surface: #151d1a; --surface-2: #1b2521; --border: #27332e;
-    --text: #e8eeeb; --muted: #95a39d; --accent: #2dd4bf; --accent-ink: #062a26; --accent-soft: #123430;
-    --warn: #f5b454; --warn-soft: #33270f; --danger: #f88a7e; --danger-soft: #3a1714; --ok: #6ee7a0; --ok-soft: #12301f;
-    --shadow: 0 1px 2px rgba(0,0,0,.3); color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0e1412; --surface: #151d1a; --surface-2: #1b2521; --border: #27332e;
-  --text: #e8eeeb; --muted: #95a39d; --accent: #2dd4bf; --accent-ink: #062a26; --accent-soft: #123430;
-  --warn: #f5b454; --warn-soft: #33270f; --danger: #f88a7e; --danger-soft: #3a1714; --ok: #6ee7a0; --ok-soft: #12301f;
-  --shadow: 0 1px 2px rgba(0,0,0,.3); color-scheme: dark;
+  /* Charcoal black base, royal blue for actions, tangerine for prices and highlights. One committed dark look. */
+  --bg: #161719; --surface: #1f2023; --surface-2: #2a2b2f; --border: #34363b;
+  --text: #f2f2f0; --muted: #a3a6ad;
+  --accent: #3157d5; --accent-ink: #ffffff; --accent-text: #8fa8ff; --accent-soft: #1c2547;
+  --hot: #ff8c1a; --hot-ink: #1a1206; --hot-soft: #3a2410;
+  --warn: #ffa347; --warn-soft: #3a2410; --danger: #ff6b5e; --danger-soft: #3a1614; --ok: #5ad08a; --ok-soft: #12301f;
+  --radius: 14px; --shadow: 0 1px 2px rgba(0,0,0,.35), 0 6px 20px rgba(0,0,0,.25);
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-a { color: var(--accent); }
+a { color: var(--accent-text); }
 h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; letter-spacing: -.01em; }
 h1 { font-size: clamp(26px, 5vw, 36px); font-weight: 700; }
 h2 { font-size: 20px; font-weight: 650; }
@@ -50,7 +39,7 @@ p { margin: 0 0 .75em; }
 
 header.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
 header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 12px; }
-.brand { font-weight: 700; font-size: 16px; text-decoration: none; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brand { font-weight: 800; letter-spacing: -.01em; font-size: 16px; text-decoration: none; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
 .card + .card { margin-top: 14px; }
@@ -73,7 +62,7 @@ button.block { width: 100%; }
 
 label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--muted); }
 input, select, textarea { font: inherit; width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
-input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 1px; }
 textarea { min-height: 90px; resize: vertical; }
 .field { margin-bottom: 12px; }
 .fields { display: grid; gap: 0 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
@@ -82,11 +71,11 @@ textarea { min-height: 90px; resize: vertical; }
 .pill.ok { background: var(--ok-soft); color: var(--ok); }
 .pill.warn { background: var(--warn-soft); color: var(--warn); }
 .pill.danger { background: var(--danger-soft); color: var(--danger); }
-.pill.accent { background: var(--accent-soft); color: var(--accent); }
+.pill.accent { background: var(--accent-soft); color: var(--accent-text); }
 
 .hero { padding: 36px 0 8px; }
 .hero .meta { color: var(--muted); }
-.price { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+.price { font-size: 26px; font-weight: 700; letter-spacing: -.02em; color: var(--hot); }
 .pkg { display: flex; flex-direction: column; }
 .pkg .desc { flex: 1; }
 
@@ -98,7 +87,7 @@ textarea { min-height: 90px; resize: vertical; }
 
 .tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--border); margin: 16px 0 20px; scrollbar-width: none; }
 .tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; color: var(--muted); padding: 10px 12px; white-space: nowrap; }
-.tabs button.on { color: var(--text); border-bottom-color: var(--accent); }
+.tabs button.on { color: var(--text); border-bottom-color: var(--hot); }
 
 .stats { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
 .stat .n { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
@@ -125,7 +114,7 @@ textarea { min-height: 90px; resize: vertical; }
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; z-index: 60; font-weight: 600; max-width: calc(100% - 32px); box-shadow: var(--shadow); }
 .banner { padding: 12px 14px; border-radius: 12px; background: var(--warn-soft); color: var(--warn); font-weight: 500; margin-bottom: 14px; }
 .banner.ok { background: var(--ok-soft); color: var(--ok); }
-.banner.info { background: var(--accent-soft); color: var(--accent); }
+.banner.info { background: var(--accent-soft); color: var(--accent-text); }
 .err { color: var(--danger); font-size: 14px; margin: 6px 0 0; min-height: 1em; }
 .auth { max-width: 420px; margin: 40px auto; }
 .avail-day { display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 12px 0; border-top: 1px solid var(--border); align-items: start; }
@@ -390,8 +379,8 @@ async function coachPage(slug) {
 
   function pkgCard(p, offer) {
     const each = p.lessonCount > 1 ? ` · ${money(Math.round(p.priceCents / p.lessonCount))} each` : "";
-    return `<div class="card pkg" ${offer ? 'style="border-color:var(--accent)"' : ""}>
-      ${offer ? `<span class="pill accent" style="align-self:flex-start;margin-bottom:8px">Custom offer for you</span>` : ""}
+    return `<div class="card pkg" ${offer ? 'style="border-color:var(--hot)"' : ""}>
+      ${offer ? `<span class="pill" style="align-self:flex-start;margin-bottom:8px;background:var(--hot-soft);color:var(--hot)">Custom offer for you</span>` : ""}
       <h3>${esc(p.name)}</h3>
       ${p.kind === "group"
         ? `<div class="price">${money(p.priceCents)} <span class="muted" style="font-size:15px;font-weight:500">per person</span></div>
