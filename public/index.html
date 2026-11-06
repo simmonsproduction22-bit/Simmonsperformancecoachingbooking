@@ -127,16 +127,18 @@ details > summary::-webkit-details-marker { display: none; }
     radial-gradient(60% 70% at 85% 30%, rgba(176,130,59,.16), transparent 60%),
     radial-gradient(40% 50% at 10% 90%, rgba(220,192,143,.07), transparent 60%),
     linear-gradient(180deg, #0f0e0b, #030303); }
-.hero-photo { position: absolute; inset: 0 0 0 38%; background-size: cover; background-position: 50% 30%; opacity: .42;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 45%, #000 100%); mask-image: linear-gradient(90deg, transparent 0%, #000 45%, #000 100%); }
-.hero-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,5,5,.15), rgba(5,5,5,.55)); }
+.hero-photo { position: absolute; inset: 0 0 0 34%; background-size: cover; background-position: 62% 22%; opacity: .8;
+  filter: grayscale(1) sepia(.55) saturate(1.5) hue-rotate(-6deg) brightness(.82) contrast(1.18);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 38%, #000 100%); mask-image: linear-gradient(90deg, transparent 0%, #000 38%, #000 100%); }
+.hero-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,5,5,0) 40%, rgba(5,5,5,.6)); }
 .hero .lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.hero-inner { position: relative; display: grid; grid-template-columns: 1.1fr .9fr; gap: 20px 48px; padding: clamp(24px, 4vw, 48px) clamp(24px, 4vw, 48px) clamp(48px, 6vw, 72px); align-items: end; }
+.hero-inner { position: relative; display: grid; grid-template-columns: minmax(0, 600px) 1fr; gap: 20px 48px; padding: clamp(24px, 4vw, 48px) clamp(24px, 4vw, 48px) clamp(48px, 6vw, 72px); align-items: end; }
 @media (max-width: 880px) { .hero-inner { grid-template-columns: 1fr; } }
-.display { font: 900 clamp(54px, 9vw, 116px)/.88 var(--display); text-transform: uppercase; letter-spacing: -.005em; margin: 0; }
+.display { font: 900 clamp(50px, 8vw, 104px)/.9 var(--display); text-transform: uppercase; letter-spacing: -.005em; margin: 0; }
 .display .line { display: block; }
-.display .gold { background: var(--gold-text); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 6s ease-in-out infinite; filter: drop-shadow(0 4px 24px rgba(176,130,59,.25)); }
+.display .gold { display: inline-block; background: var(--gold-text); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 6s ease-in-out infinite; filter: drop-shadow(0 4px 24px rgba(176,130,59,.25)); }
 @keyframes shine { 0%, 100% { background-position: 0% 0; } 50% { background-position: 100% 0; } }
+.hero-copy { margin-top: 24px; }
 .lede { font-size: 17px; color: #d9d9d9; max-width: 44ch; margin-bottom: 20px; }
 .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
 .hero-meta { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 22px; font-size: 13px; color: var(--muted); }
@@ -216,8 +218,9 @@ details > summary::-webkit-details-marker { display: none; }
   .section { margin: 28px 0; }
   .hero { margin-top: 12px; border-radius: 20px; }
   .hero-inner { padding: 22px 18px 44px; gap: 14px; }
-  .hero-photo { inset: 0; opacity: .3; -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 85%); mask-image: linear-gradient(180deg, #000 0%, transparent 85%); }
-  .display { font-size: clamp(56px, 17vw, 72px); }
+  .hero-photo { inset: 0 0 auto 0; height: 300px; opacity: .85; background-position: 60% 24%; -webkit-mask-image: linear-gradient(180deg, #000 50%, transparent 100%); mask-image: linear-gradient(180deg, #000 50%, transparent 100%); }
+  .hero-inner { padding-top: 210px; }
+  .display { font-size: clamp(44px, 14vw, 60px); }
   .lede { font-size: 16px; margin-bottom: 16px; }
   .hero-cta { display: grid; grid-template-columns: 1fr; gap: 8px; }
   .hero-cta .lg { min-height: 46px; padding: 10px 10px; font-size: 13.5px; white-space: nowrap; }
@@ -518,18 +521,25 @@ async function coachPage(slug) {
     </div>`;
   }
 
-  /** Big hero headline: words split over up to three lines. */
+  /** Big hero headline: words packed into short lines, last word in gold. */
   function displayHeadline(text) {
-    const words = String(text || coach.name).trim().toUpperCase().split(/\s+/).filter(Boolean);
+    const words = String(text || "The best hour of your day").trim().toUpperCase().split(/\s+/).filter(Boolean);
     const last = words.pop() || "";
     const lines = [];
     for (const w of words) {
       const cur = lines[lines.length - 1];
-      if (cur && (cur + " " + w).length <= 11 && lines.length) lines[lines.length - 1] = cur + " " + w;
+      if (cur && (cur + " " + w).length <= 13) lines[lines.length - 1] = cur + " " + w;
       else lines.push(w);
     }
-    return lines.map((l) => `<span class="line">${esc(l)}</span>`).join("") + `<span class="line gold">${esc(last)}</span>`;
+    const gold = `<span class="gold">${esc(last)}</span>`;
+    const tail = lines[lines.length - 1];
+    if (tail && (tail + " " + last).length <= 13) {
+      lines.pop();
+      return lines.map((l) => `<span class="line">${esc(l)}</span>`).join("") + `<span class="line">${esc(tail)} ${gold}</span>`;
+    }
+    return lines.map((l) => `<span class="line">${esc(l)}</span>`).join("") + `<span class="line">${gold}</span>`;
   }
+
 
   function draw() {
     const upcoming = me ? me.lessons.filter((l) => l.status === "booked").sort((a, b) => a.startsAt.localeCompare(b.startsAt)) : [];
@@ -574,7 +584,6 @@ async function coachPage(slug) {
               ${notice}
               <div class="eyebrow">${esc(coach.name)}</div>
               <h1 class="display">${displayHeadline(coach.headline)}</h1>
-            </div>
             <div class="hero-copy">
               <p class="lede">${lede}</p>
               <div class="hero-cta">
@@ -586,6 +595,7 @@ async function coachPage(slug) {
                 ${fromPrice ? `<div><b>From ${money(Math.round(fromPrice))}</b>per lesson</div>` : ""}
                 ${group ? `<div><b>${group.minPeople}+</b>per small group</div>` : ""}
               </div>
+            </div>
             </div>
           </div>
         </section>
@@ -1348,7 +1358,7 @@ async function coachApp() {
           <div class="field"><label for="s-name">Name</label><input id="s-name" name="name" value="${esc(c.name)}" required></div>
           <div class="field"><label for="s-slug">Page address</label><input id="s-slug" name="slug" value="${esc(c.slug)}" pattern="(?:[a-z0-9]|-){3,40}" required></div>
         </div>
-        <div class="field"><label for="s-head">Headline (shown big on your page; 2–5 words works best)</label><input id="s-head" name="headline" value="${esc(c.headline)}" placeholder="Train with purpose" maxlength="60"></div>
+        <div class="field"><label for="s-head">Headline (shown big on your page; 2–5 words works best)</label><input id="s-head" name="headline" value="${esc(c.headline)}" placeholder="The best hour of your day" maxlength="60"></div>
         <div class="field"><label for="s-loc">Location</label><input id="s-loc" name="location" value="${esc(c.location)}" placeholder="Austin, TX" maxlength="140"></div>
         <div class="field"><label for="s-bio">About you</label><textarea id="s-bio" name="bio" maxlength="4000">${esc(c.bio)}</textarea></div>
       </div>
