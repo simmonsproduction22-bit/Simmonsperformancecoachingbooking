@@ -618,7 +618,7 @@ async function coachPage(slug) {
           <h2>Three steps to your first lesson</h2>
           <div class="steps" style="margin-top:14px">
             <div class="step"><h3>Pick a package</h3><p class="muted" style="margin:0">Single lessons, multi-lesson packs that bring the price down, or a small group with friends.</p></div>
-            <div class="step"><h3>Book your time</h3><p class="muted" style="margin:0">Choose from open times on the calendar. Reschedule online up to ${coach.cancelWindowHours} hours ahead.</p></div>
+            <div class="step"><h3>Book your time</h3><p class="muted" style="margin:0">Choose from open times on the calendar.</p></div>
             <div class="step"><h3>Show up and train</h3><p class="muted" style="margin:0">Your remaining lessons and upcoming bookings are always in your account.</p></div>
           </div>
         </section>
@@ -678,7 +678,6 @@ async function coachPage(slug) {
           <div class="eyebrow">Policies</div>
           <div class="policies" style="margin-top:8px">
             <div><b>${coach.cancelWindowHours} hours</b>Reschedule or cancel online up to ${coach.cancelWindowHours} hours before a lesson and it goes back on your balance.</div>
-            <div><b>Late or no-show</b>Inside ${coach.cancelWindowHours} hours, or if you don't show up, the lesson counts as used.</div>
             <div><b>${coach.maxDaysAhead} days out</b>Book at least ${coach.minNoticeHours} hour${coach.minNoticeHours === 1 ? "" : "s"} ahead and up to ${coach.maxDaysAhead} days out.</div>
           </div>
         </section>
