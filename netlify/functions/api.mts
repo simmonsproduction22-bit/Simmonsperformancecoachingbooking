@@ -530,7 +530,7 @@ async function coachRoutes(req: Request, parts: string[]): Promise<Response> {
       ["Single Lesson", "One private lesson.", 1, 12500, "private", 1, 1, 10],
       ["8-Lesson Pack", "Eight private lessons at $110 each.", 8, 88000, "private", 1, 1, 20],
       ["12-Lesson Pack", "Twelve private lessons at $100 each. Best value.", 12, 120000, "private", 1, 1, 30],
-      ["Small Group Lesson", "Bring your crew: one lesson for a group of 3 to 6. Price is per person.", 1, 5000, "group", 3, 6, 40],
+      ["Small Group Lesson", "Bring your crew: one lesson for a group of 3 or more. Price is per person.", 1, 5000, "group", 3, 10, 40],
     ];
     for (const [name, desc, count, price, kind, minP, maxP, sort] of starter) {
       await q(

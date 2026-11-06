@@ -213,8 +213,7 @@ details > summary::-webkit-details-marker { display: none; }
   .hero-inner { padding: 22px 18px 44px; gap: 14px; }
   .display { font-size: clamp(56px, 17vw, 72px); }
   .lede { font-size: 16px; margin-bottom: 16px; }
-  .hero-cta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .hero-cta > :first-child { grid-column: 1 / -1; }
+  .hero-cta { display: grid; grid-template-columns: 1fr; gap: 8px; }
   .hero-cta .lg { min-height: 46px; padding: 10px 10px; font-size: 13.5px; white-space: nowrap; }
   .hero-meta { margin-top: 16px; gap: 18px; }
   h2 { font-size: 28px; }
@@ -504,7 +503,7 @@ async function coachPage(slug) {
       <h3 style="margin:0">${esc(p.name)}</h3>
       ${p.kind === "group"
         ? `<div class="price">${money(p.priceCents)} <small>per person</small></div>
-           <div class="per">${p.minPeople}–${p.maxPeople} people · ${p.lessonCount} lesson${p.lessonCount > 1 ? "s" : ""}</div>`
+           <div class="per">${p.minPeople}+ people · ${p.lessonCount} lesson${p.lessonCount > 1 ? "s" : ""}</div>`
         : `<div class="price">${money(p.priceCents)}</div>
            <div class="per">${p.lessonCount} lesson${p.lessonCount > 1 ? "s" : ""}${p.lessonCount > 1 ? ` · <b>${money(per)}</b> each` : ""}</div>`}
       <p class="desc" style="white-space:pre-line;margin:6px 0 0">${esc(p.description)}</p>
@@ -536,7 +535,7 @@ async function coachPage(slug) {
     const best = multi.length ? multi.reduce((a, b) => (perLesson(b) < perLesson(a) ? b : a)) : null;
     const fromPrice = privatePkgs.length ? Math.min(...privatePkgs.map(perLesson)) : null;
     const group = groupPkgs[0];
-    const lede = `Private lessons, small groups and team wellness${coach.location ? ` in ${esc(coach.location)}` : ""}. Buy a package, book online and reschedule anytime.`;
+    const lede = `Private lessons, small groups and premium corporate training${coach.location ? ` in ${esc(coach.location)}` : ""}. Buy a package, book online and reschedule anytime.`;
 
     app.innerHTML = `
       <header class="top"><div class="wrap">
@@ -544,7 +543,7 @@ async function coachPage(slug) {
         <nav class="nav-links" aria-label="Sections">
           <a data-act="go" data-to="packages">Lessons</a>
           ${groupPkgs.length ? `<a data-act="go" data-to="groups">Groups</a>` : ""}
-          <a data-act="go" data-to="corporate">Corporate</a>
+          <a data-act="go" data-to="corporate">Corporate training</a>
           ${coach.bio ? `<a data-act="go" data-to="about">About</a>` : ""}
         </nav>
         <div class="row" style="flex-wrap:nowrap;gap:8px">
@@ -574,11 +573,11 @@ async function coachPage(slug) {
               <div class="hero-cta">
                 ${me && me.creditsRemaining ? `<button class="primary lg" data-act="book">Book a lesson</button>` : `<button class="primary lg" data-act="go" data-to="packages">See packages</button>`}
                 ${groupPkgs.length ? `<button class="lg" data-act="go" data-to="groups">Small groups</button>` : ""}
-                <button class="lg" data-act="go" data-to="corporate">Corporate wellness</button>
+                <button class="lg" data-act="go" data-to="corporate">Premium corporate training</button>
               </div>
               <div class="hero-meta">
                 ${fromPrice ? `<div><b>From ${money(Math.round(fromPrice))}</b>per lesson</div>` : ""}
-                ${group ? `<div><b>${group.minPeople}–${group.maxPeople}</b>per small group</div>` : ""}
+                ${group ? `<div><b>${group.minPeople}+</b>per small group</div>` : ""}
               </div>
             </div>
           </div>
@@ -644,7 +643,7 @@ async function coachPage(slug) {
               <div class="stack">${groupPkgs.map((p) => `
                 <div class="row spread" style="padding:16px;border:1px solid var(--border-2);border-radius:14px;background:var(--surface)">
                   <div><div class="price" style="font-size:32px">${money(p.priceCents)} <small>per person</small></div>
-                  <div class="muted small">${esc(p.name)} · ${p.minPeople}–${p.maxPeople} people</div></div>
+                  <div class="muted small">${esc(p.name)} · ${p.minPeople}+ people</div></div>
                   <button class="primary" data-act="buy" data-id="${p.id}" ${pub.paymentsReady ? "" : "disabled"}>Choose group size</button>
                 </div>`).join("")}</div>
             </div>
@@ -654,7 +653,7 @@ async function coachPage(slug) {
         <section class="section" id="corporate">
           <div class="band pink-edge">
             <div class="band-body">
-              <div class="eyebrow">Corporate wellness</div>
+              <div class="eyebrow">Premium corporate training</div>
               <h2>Sessions for your team</h2>
               <p class="muted">On-site or group sessions built around your team's schedule and goals. Every program is quoted to fit, so tell us what you have in mind.</p>
               <div><button class="primary" data-act="quote">Request a quote</button></div>
@@ -746,7 +745,7 @@ async function coachPage(slug) {
   }
 
   function quoteSheet() {
-    sheet("Corporate wellness", `<form>
+    sheet("Premium corporate training", `<form>
       <p class="muted">Tell ${esc(coach.name)} about your team and they'll follow up with a custom quote.</p>
       <div class="fields">
         <div class="field"><label for="q-name">Your name</label><input id="q-name" name="name" required autocomplete="name"></div>
@@ -956,7 +955,7 @@ async function coachApp() {
       if (act === "inq") { await api("PUT", `/coach/inquiries/${id}`, { status: b.dataset.status }, token); return refresh(); }
       if (act === "offer-for") {
         const i = d.inquiries.find((x) => x.id == id);
-        return packageSheet(null, { offer: true, offerFor: i.company || i.name, name: `${i.company || i.name} Wellness`, inquiry: i });
+        return packageSheet(null, { offer: true, offerFor: i.company || i.name, name: `${i.company || i.name} Corporate Training`, inquiry: i });
       }
       if (act === "copy") { navigator.clipboard?.writeText(b.dataset.text); toast("Link copied"); return; }
     } catch (x) { toast(x.message); b.disabled = false; }
@@ -1183,12 +1182,12 @@ async function coachApp() {
     catch (x) { toast(x.message); }
   }
 
-  // ---------- Requests (corporate wellness quotes) ----------
+  // ---------- Requests (corporate training quotes) ----------
   function viewRequests(v) {
     const label = { new: ["New", "warn"], replied: ["Replied", "ok"], closed: ["Closed", ""] };
     v.innerHTML = `<div class="row spread" style="margin-bottom:12px"><h2 style="margin:0">Quote requests</h2>
         <button class="sm" data-act="pkg-offer">New private offer</button></div>
-      <p class="muted small">From the Corporate wellness form on your page. Reply by email, then send a private offer link they can pay online.</p>
+      <p class="muted small">From the Premium corporate training form on your page. Reply by email, then send a private offer link they can pay online.</p>
       <div class="list">${d.inquiries.length ? d.inquiries.map((i) => `
         <div class="item" style="align-items:flex-start">
           <div class="grow">
@@ -1201,7 +1200,7 @@ async function coachApp() {
               ${i.status !== "closed" ? `<button class="sm ghost" data-act="inq" data-status="closed" data-id="${i.id}">Close</button>` : `<button class="sm ghost" data-act="inq" data-status="new" data-id="${i.id}">Reopen</button>`}
             </div>
           </div>
-        </div>`).join("") : `<div class="empty">No requests yet. They show up here when a company fills in the Corporate wellness form.</div>`}</div>`;
+        </div>`).join("") : `<div class="empty">No requests yet. They show up here when a company fills in the Premium corporate training form.</div>`}</div>`;
   }
 
   function offerLinkSheet(pkg, inquiry) {
@@ -1234,7 +1233,7 @@ async function coachApp() {
     const pub = d.packages.filter((p) => !p.isOffer), offers = d.packages.filter((p) => p.isOffer);
     v.innerHTML = `<div class="row spread" style="margin-bottom:12px"><h2 style="margin:0">Packages</h2><button class="sm primary" data-act="pkg">New package</button></div>
       ${pub.length ? `<div class="grid">${pub.map(card).join("")}</div>` : `<div class="card"><h3>Start with your pricing</h3>
-        <p class="muted">Adds Single $125, 8-Pack $880 ($110 each), 12-Pack $1,200 ($100 each), and Small Group at $50 per person for 3–6 people. You can edit any of them.</p>
+        <p class="muted">Adds Single $125, 8-Pack $880 ($110 each), 12-Pack $1,200 ($100 each), and Small Group at $50 per person for 3 or more people. You can edit any of them.</p>
         <button class="primary" data-act="starter">Add these packages</button></div>`}
       ${offers.length ? `<h2 style="margin-top:28px">Private offers</h2><p class="muted small">Only people with the link can see and buy these.</p><div class="grid">${offers.map(card).join("")}</div>` : ""}
       <p class="muted small" style="margin-top:14px">Keep use-by at 90 days or less: Stripe can only hold card payments for a limited time.</p>`;

@@ -37,8 +37,8 @@ Stripe fees: about 2.9% + 30¢ per card payment (about $7.26 on $240). Transfers
 ## Packages, groups and corporate
 
 - **Private packages**: one price for N lessons. The **Packages** tab has a one-tap starter set: Single $125, 8-Pack $880 ($110 each), 12-Pack $1,200 ($100 each).
-- **Small groups** (type "Small group"): the price is **per person** with a min/max headcount (starter: $50/person, 3–6 people). One client picks the headcount and pays for everyone, e.g. 4 people = $200. The booked lesson shows as "Group of 4", and closing it out releases the full $200.
-- **Corporate wellness**: a "Request a quote" form on the coach page sends requests to the **Requests** tab. **Create offer** makes a private package with a custom price and a link only that company can open (it's never listed publicly). They sign up through the link and pay by card like any other package, and it releases per session.
+- **Small groups** (type "Small group"): the price is **per person** with a min/max headcount (starter: $50/person, 3–10 people). One client picks the headcount and pays for everyone, e.g. 4 people = $200. The booked lesson shows as "Group of 4", and closing it out releases the full $200.
+- **Premium corporate training**: a "Request a quote" form on the coach page sends requests to the **Requests** tab. **Create offer** makes a private package with a custom price and a link only that company can open (it's never listed publicly). They sign up through the link and pay by card like any other package, and it releases per session.
 - Clients with more than one kind of lesson left (say a private lesson and a group of 3) pick which one when booking.
 
 ## Booking rules (set per coach in Settings)
