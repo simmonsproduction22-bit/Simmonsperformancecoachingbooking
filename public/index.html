@@ -115,6 +115,8 @@ details > summary::-webkit-details-marker { display: none; }
     radial-gradient(120% 80% at 80% 10%, rgba(255,191,214,.35), transparent 55%),
     radial-gradient(90% 90% at 10% 100%, rgba(47,212,180,.45), transparent 60%),
     linear-gradient(160deg, #13204a, #0a1230); min-height: 160px; }
+.ph.has-img { background: var(--surface-2); }
+.ph.has-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .ph svg.fig { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); height: 86%; width: auto; opacity: .55; }
 .ph .ph-label { position: absolute; left: 12px; bottom: 12px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(236,241,255,.85); background: rgba(6,10,24,.55); padding: 4px 9px; border-radius: 99px; backdrop-filter: blur(6px); }
 
@@ -128,10 +130,6 @@ details > summary::-webkit-details-marker { display: none; }
 @media (max-width: 880px) { .hero-inner { grid-template-columns: 1fr; } }
 .display { font: 900 clamp(58px, 10.5vw, 132px)/.88 var(--display); text-transform: uppercase; letter-spacing: -.005em; margin: 0 0 22px; }
 .display .line { display: block; }
-.sel { position: relative; display: inline-block; padding: 0 .12em; margin-left: -.12em; border: 2px solid var(--accent); box-shadow: 0 0 28px rgba(47,212,180,.35), inset 0 0 22px rgba(47,212,180,.12); color: var(--text); }
-.sel::before, .sel::after { content: ""; position: absolute; width: 10px; height: 10px; background: var(--pink); border-radius: 2px; }
-.sel::before { left: -6px; top: -6px; }
-.sel::after { right: -6px; bottom: -6px; }
 .lede { font-size: 17px; color: #c3cbea; max-width: 46ch; margin-bottom: 26px; }
 .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
 .hero-meta { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 28px; font-size: 13px; color: var(--muted); }
@@ -236,6 +234,11 @@ function ph(label) {
     <svg class="fig" viewBox="0 0 200 260" aria-hidden="true"><g fill="none" stroke="#ecf1ff" stroke-width="2">
       <circle cx="100" cy="70" r="34"/><path d="M30 260 C 30 170, 60 128, 100 128 S 170 170, 170 260"/></g></svg>
     <span class="ph-label">${esc(label)}</span></div>`;
+}
+/** The coach's photo, cropped to fill its frame. */
+const COACH_PHOTO = "/coach.jpg";
+function photo(alt, position = "50% 30%") {
+  return `<div class="ph has-img"><img src="${COACH_PHOTO}" alt="${esc(alt)}" loading="lazy" style="object-position:${position}"></div>`;
 }
 const money = (c) => "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 });
 const store = {
@@ -492,7 +495,7 @@ async function coachPage(slug) {
     </div>`;
   }
 
-  /** Big hero headline: words split over up to three lines, last word boxed like a selected layer. */
+  /** Big hero headline: words split over up to three lines. */
   function displayHeadline(text) {
     const words = String(text || coach.name).trim().toUpperCase().split(/\s+/).filter(Boolean);
     const last = words.pop() || "";
@@ -502,7 +505,7 @@ async function coachPage(slug) {
       if (cur && (cur + " " + w).length <= 11 && lines.length) lines[lines.length - 1] = cur + " " + w;
       else lines.push(w);
     }
-    return lines.map((l) => `<span class="line">${esc(l)}</span>`).join("") + `<span class="line"><span class="sel">${esc(last)}</span></span>`;
+    return lines.map((l) => `<span class="line">${esc(l)}</span>`).join("") + `<span class="line">${esc(last)}</span>`;
   }
 
   function draw() {
@@ -563,7 +566,7 @@ async function coachPage(slug) {
               ${group ? `<div class="float f2"><span class="k">Small groups</span><span class="v">${money(group.priceCents)} / person</span></div>` : ""}
               <div class="phone"><div class="screen">
                 <div class="notch"></div>
-                ${ph("Coach photo")}
+                ${photo(`${coach.name}`, "50% 28%")}
                 <div class="screen-body">
                   <h4>Next open times</h4>
                   <div class="muted small">${coach.lessonMinutes}-minute private lesson</div>
@@ -657,7 +660,7 @@ async function coachPage(slug) {
         ${coach.bio ? `
         <section class="section" id="about">
           <div class="band">
-            ${ph("Portrait")}
+            ${photo(`Portrait of ${coach.name}`, "45% 30%")}
             <div class="band-body">
               <div class="eyebrow">About</div>
               <h2>${esc(coach.name)}</h2>
