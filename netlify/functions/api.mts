@@ -523,13 +523,13 @@ async function coachRoutes(req: Request, parts: string[]): Promise<Response> {
   }
 
   if (m === "POST" && a === "starter-packages") {
-    // One-tap starting lineup: $125 single down to $100/lesson, plus $50/person small groups.
+    // One-tap starting lineup: $125 single, 8-pack at $110, 12-pack at $100, plus $50/person small groups.
     const [{ n }] = await q(`SELECT COUNT(*)::int AS n FROM packages WHERE coach_id = $1`, [coach.id]);
     if (n > 0) return fail(409, "You already have packages.");
     const starter: [string, string, number, number, string, number, number, number][] = [
       ["Single Lesson", "One private lesson.", 1, 12500, "private", 1, 1, 10],
-      ["5-Lesson Pack", "Five private lessons at $115 each.", 5, 57500, "private", 1, 1, 20],
-      ["10-Lesson Pack", "Ten private lessons at $100 each. Best value.", 10, 100000, "private", 1, 1, 30],
+      ["8-Lesson Pack", "Eight private lessons at $110 each.", 8, 88000, "private", 1, 1, 20],
+      ["12-Lesson Pack", "Twelve private lessons at $100 each. Best value.", 12, 120000, "private", 1, 1, 30],
       ["Small Group Lesson", "Bring your crew: one lesson for a group of 3 to 6. Price is per person.", 1, 5000, "group", 3, 6, 40],
     ];
     for (const [name, desc, count, price, kind, minP, maxP, sort] of starter) {

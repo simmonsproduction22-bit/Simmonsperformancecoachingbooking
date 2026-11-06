@@ -149,12 +149,12 @@ test("groups, private offers, quote requests, starter packages", async () => {
   ok(await call("PUT", "/api/coach/profile", { minNoticeHours: 0 }, coach));
   ok(await call("PUT", "/api/coach/availability", { windows: [0, 1, 2, 3, 4, 5, 6].map((d) => ({ weekday: d, startMin: 0, endMin: 1440 })) }, coach));
 
-  // Starter lineup: $125 single, $115 and $100 packs, $50/person group.
+  // Starter lineup: $125 single, $110 and $100 packs, $50/person group.
   ok(await call("POST", "/api/coach/starter-packages", {}, coach), 201);
   assert.equal((await call("POST", "/api/coach/starter-packages", {}, coach)).status, 409);
   const pub = ok(await call("GET", "/api/c/sam"));
   assert.deepEqual(pub.packages.map((p) => [p.name, p.priceCents / p.lessonCount]),
-    [["Single Lesson", 12500], ["5-Lesson Pack", 11500], ["10-Lesson Pack", 10000], ["Small Group Lesson", 5000]]);
+    [["Single Lesson", 12500], ["8-Lesson Pack", 11000], ["12-Lesson Pack", 10000], ["Small Group Lesson", 5000]]);
   const group = pub.packages.find((p) => p.kind === "group");
 
   // Group of 4 pays $200; group of 2 is refused.
