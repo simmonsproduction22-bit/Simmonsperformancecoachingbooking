@@ -127,6 +127,9 @@ details > summary::-webkit-details-marker { display: none; }
     radial-gradient(60% 70% at 85% 30%, rgba(176,130,59,.16), transparent 60%),
     radial-gradient(40% 50% at 10% 90%, rgba(220,192,143,.07), transparent 60%),
     linear-gradient(180deg, #0f0e0b, #030303); }
+.hero-photo { position: absolute; inset: 0 0 0 38%; background-size: cover; background-position: 50% 30%; opacity: .42;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 45%, #000 100%); mask-image: linear-gradient(90deg, transparent 0%, #000 45%, #000 100%); }
+.hero-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,5,5,.15), rgba(5,5,5,.55)); }
 .hero .lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .hero-inner { position: relative; display: grid; grid-template-columns: 1.1fr .9fr; gap: 20px 48px; padding: clamp(24px, 4vw, 48px) clamp(24px, 4vw, 48px) clamp(48px, 6vw, 72px); align-items: end; }
 @media (max-width: 880px) { .hero-inner { grid-template-columns: 1fr; } }
@@ -156,6 +159,8 @@ details > summary::-webkit-details-marker { display: none; }
 .band > .ph { border-radius: 0; min-height: 230px; }
 .band .band-body { padding: clamp(20px, 3vw, 32px); display: flex; flex-direction: column; justify-content: center; }
 @media (max-width: 760px) { .band { grid-template-columns: 1fr; } .band > .ph { min-height: 200px; } }
+.band.solo { grid-template-columns: 1fr; }
+.band.solo .band-body { max-width: 760px; }
 .band.pink-edge { border-color: rgba(220,192,143,.3); }
 .your { border: 1px solid rgba(176,130,59,.45); box-shadow: var(--glow); }
 .policies { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
@@ -211,6 +216,7 @@ details > summary::-webkit-details-marker { display: none; }
   .section { margin: 28px 0; }
   .hero { margin-top: 12px; border-radius: 20px; }
   .hero-inner { padding: 22px 18px 44px; gap: 14px; }
+  .hero-photo { inset: 0; opacity: .3; -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 85%); mask-image: linear-gradient(180deg, #000 0%, transparent 85%); }
   .display { font-size: clamp(56px, 17vw, 72px); }
   .lede { font-size: 16px; margin-bottom: 16px; }
   .hero-cta { display: grid; grid-template-columns: 1fr; gap: 8px; }
@@ -253,9 +259,9 @@ function ph(label) {
     <span class="ph-label">${esc(label)}</span></div>`;
 }
 /** The coach's photo, cropped to fill its frame. */
-const COACH_PHOTO = "/coach.jpg";
-function photo(alt, position = "50% 30%") {
-  return `<div class="ph has-img"><img src="${COACH_PHOTO}" alt="${esc(alt)}" loading="lazy" style="object-position:${position}"></div>`;
+const PHOTOS = { coach: "/coach.jpg", hero: "/hero.jpg", groups: "/groups.jpg" };
+function photo(alt, position = "50% 30%", src = PHOTOS.coach) {
+  return `<div class="ph has-img"><img src="${src}" alt="${esc(alt)}" loading="lazy" style="object-position:${position}"></div>`;
 }
 const money = (c) => "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 });
 const store = {
@@ -554,6 +560,7 @@ async function coachPage(slug) {
 
       <main class="wrap">
         <section class="hero">
+          <div class="hero-photo" style="background-image:url('${PHOTOS.hero}')" aria-hidden="true"></div>
           <svg class="lines" viewBox="0 0 1200 640" preserveAspectRatio="none" aria-hidden="true">
             <defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6"/></filter><linearGradient id="goldline" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6a4716"/><stop offset=".3" stop-color="#dfbd82"/><stop offset=".55" stop-color="#ad7f3c"/><stop offset=".8" stop-color="#ecd3a0"/><stop offset="1" stop-color="#8f6326"/></linearGradient></defs>
             <path d="M-20 520 C 160 520, 230 80, 420 120 S 640 600, 820 420 S 1080 60, 1230 180" fill="none" stroke="url(#goldline)" stroke-width="5" opacity=".45" filter="url(#glow)"/>
@@ -635,7 +642,7 @@ async function coachPage(slug) {
         ${groupPkgs.length ? `
         <section class="section" id="groups">
           <div class="band">
-            ${ph("Group session photo")}
+            ${photo("Two fighters trading strikes in the cage", "55% 40%", PHOTOS.groups)}
             <div class="band-body">
               <div class="eyebrow">Small groups</div>
               <h2>Bring your crew</h2>
@@ -651,14 +658,13 @@ async function coachPage(slug) {
         </section>` : ""}
 
         <section class="section" id="corporate">
-          <div class="band pink-edge">
+          <div class="band pink-edge solo">
             <div class="band-body">
               <div class="eyebrow">Premium corporate training</div>
               <h2>Sessions for your team</h2>
               <p class="muted">On-site or group sessions built around your team's schedule and goals. Every program is quoted to fit, so tell us what you have in mind.</p>
               <div><button class="primary" data-act="quote">Request a quote</button></div>
             </div>
-            ${ph("Team session photo")}
           </div>
         </section>
 
