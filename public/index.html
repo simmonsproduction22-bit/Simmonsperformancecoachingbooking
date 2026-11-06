@@ -82,7 +82,7 @@ textarea { min-height: 96px; resize: vertical; }
 .card { background: linear-gradient(180deg, var(--surface), var(--bg-2)); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); }
 .card + .card { margin-top: 14px; }
 .grid > .card, .stats > .card { margin-top: 0; }
-.section { margin: 56px 0; }
+.section { margin: 36px 0; }
 .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
 .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
 .pill.ok { background: var(--ok-soft); color: var(--ok); }
@@ -103,7 +103,7 @@ textarea { min-height: 96px; resize: vertical; }
 .banner.info { background: var(--accent-soft); color: var(--accent-text); border-color: rgba(47,212,180,.25); }
 .err { color: var(--danger); font-size: 14px; margin: 6px 0 0; min-height: 1em; }
 .auth { max-width: 440px; margin: 56px auto; }
-footer { padding: 48px 0; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); margin-top: 40px; }
+footer { padding: 28px 0; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); margin-top: 24px; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { text-align: left; padding: 10px 12px; border-top: 1px solid var(--border); vertical-align: top; }
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
@@ -126,37 +126,19 @@ details > summary::-webkit-details-marker { display: none; }
     radial-gradient(40% 50% at 10% 90%, rgba(30,90,220,.18), transparent 60%),
     linear-gradient(180deg, #08102a, #050816); }
 .hero .lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.hero-inner { position: relative; display: grid; grid-template-columns: 1.15fr .85fr; gap: 24px; padding: clamp(28px, 5vw, 64px) clamp(28px, 5vw, 64px) clamp(56px, 7vw, 88px); align-items: center; }
+.hero-inner { position: relative; display: grid; grid-template-columns: 1.1fr .9fr; gap: 20px 48px; padding: clamp(24px, 4vw, 48px) clamp(24px, 4vw, 48px) clamp(48px, 6vw, 72px); align-items: end; }
 @media (max-width: 880px) { .hero-inner { grid-template-columns: 1fr; } }
-.display { font: 900 clamp(58px, 10.5vw, 132px)/.88 var(--display); text-transform: uppercase; letter-spacing: -.005em; margin: 0 0 22px; }
+.display { font: 900 clamp(54px, 9vw, 116px)/.88 var(--display); text-transform: uppercase; letter-spacing: -.005em; margin: 0; }
 .display .line { display: block; }
-.lede { font-size: 17px; color: #c3cbea; max-width: 46ch; margin-bottom: 26px; }
+.lede { font-size: 17px; color: #c3cbea; max-width: 44ch; margin-bottom: 20px; }
 .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
-.hero-meta { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 28px; font-size: 13px; color: var(--muted); }
+.hero-meta { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 22px; font-size: 13px; color: var(--muted); }
 .hero-meta b { color: var(--text); font: 800 22px/1 var(--display); display: block; letter-spacing: .02em; }
-
-/* Phone mockup */
-.stage { position: relative; display: flex; justify-content: center; padding: 10px 0 20px; }
-.phone { width: 270px; max-width: 100%; border-radius: 40px; padding: 10px; background: linear-gradient(160deg, #2a3463, #0b1129); box-shadow: 0 40px 80px -20px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.06), 0 0 60px -10px rgba(47,212,180,.35); }
-.screen { border-radius: 31px; overflow: hidden; background: var(--bg-2); position: relative; }
-.screen .notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 84px; height: 22px; background: #000; border-radius: 99px; z-index: 2; }
-.screen .ph { border-radius: 0; height: 190px; }
-.screen-body { padding: 14px; }
-.screen-body h4 { margin: 0 0 2px; font: 800 20px/1.1 var(--display); text-transform: uppercase; }
-.mini-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 12px 0; }
-.mini-slots span { font-size: 12px; font-weight: 700; text-align: center; padding: 8px 4px; border-radius: 10px; border: 1px solid var(--border-2); background: var(--surface); }
-.mini-slots span:first-child { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-.float { position: absolute; z-index: 2; border-radius: 14px; padding: 10px 14px; font-size: 13px; font-weight: 700; background: rgba(14,21,48,.86); backdrop-filter: blur(10px); border: 1px solid var(--border-2); box-shadow: 0 20px 40px -18px rgba(0,0,0,.8); }
-.float .k { display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.float.f1 { left: 0; top: 18%; }
-.float.f2 { right: 0; bottom: 18%; border-color: rgba(255,191,214,.4); }
-.float.f2 .v { color: var(--pink); }
-@media (max-width: 560px) { .float { display: none; } }
 
 /* How it works */
 .steps { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); counter-reset: step; }
-.step { padding: 22px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg-2); }
-.step::before { counter-increment: step; content: "0" counter(step); font: 900 44px/1 var(--display); color: transparent; -webkit-text-stroke: 1px var(--accent); display: block; margin-bottom: 14px; }
+.step { padding: 18px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg-2); }
+.step::before { counter-increment: step; content: "0" counter(step); font: 900 32px/1 var(--display); color: transparent; -webkit-text-stroke: 1px var(--accent); display: block; margin-bottom: 8px; }
 
 /* Packages */
 .pkg { display: flex; flex-direction: column; gap: 8px; position: relative; }
@@ -166,14 +148,14 @@ details > summary::-webkit-details-marker { display: none; }
 .pkg .per { font-size: 13px; color: var(--muted); }
 .pkg .per b { color: var(--accent-text); }
 .band { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--border); border-radius: 24px; overflow: hidden; background: var(--bg-2); }
-.band > .ph { border-radius: 0; min-height: 300px; }
-.band .band-body { padding: clamp(24px, 4vw, 44px); display: flex; flex-direction: column; justify-content: center; }
+.band > .ph { border-radius: 0; min-height: 230px; }
+.band .band-body { padding: clamp(20px, 3vw, 32px); display: flex; flex-direction: column; justify-content: center; }
 @media (max-width: 760px) { .band { grid-template-columns: 1fr; } .band > .ph { min-height: 200px; } }
 .band.pink-edge { border-color: rgba(255,191,214,.3); }
 .your { border: 1px solid rgba(47,212,180,.45); box-shadow: var(--glow); }
 .policies { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-.policies div { padding: 18px; border-radius: var(--radius); background: var(--bg-2); border: 1px solid var(--border); font-size: 14px; color: #c3cbea; }
-.policies b { display: block; font: 800 26px/1 var(--display); color: var(--text); margin-bottom: 6px; text-transform: uppercase; }
+.policies div { padding: 14px 16px; border-radius: var(--radius); background: var(--bg-2); border: 1px solid var(--border); font-size: 14px; color: #c3cbea; }
+.policies b { display: block; font: 800 22px/1 var(--display); color: var(--text); margin-bottom: 6px; text-transform: uppercase; }
 
 /* Booking pickers and sheets */
 .days { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
@@ -550,6 +532,8 @@ async function coachPage(slug) {
               ${notice}
               <div class="eyebrow">${esc(coach.name)}</div>
               <h1 class="display">${displayHeadline(coach.headline)}</h1>
+            </div>
+            <div class="hero-copy">
               <p class="lede">${lede}</p>
               <div class="hero-cta">
                 ${me && me.creditsRemaining ? `<button class="primary lg" data-act="book">Book a lesson</button>` : `<button class="primary lg" data-act="go" data-to="packages">See packages</button>`}
@@ -560,20 +544,6 @@ async function coachPage(slug) {
                 <div><b>${coach.lessonMinutes} min</b>lessons</div>
                 ${group ? `<div><b>${group.minPeople}–${group.maxPeople}</b>per small group</div>` : ""}
               </div>
-            </div>
-            <div class="stage">
-              ${best ? `<div class="float f1"><span class="k">${esc(best.name)}</span>${money(Math.round(perLesson(best)))} / lesson</div>` : ""}
-              ${group ? `<div class="float f2"><span class="k">Small groups</span><span class="v">${money(group.priceCents)} / person</span></div>` : ""}
-              <div class="phone"><div class="screen">
-                <div class="notch"></div>
-                ${photo(`${coach.name}`, "50% 28%")}
-                <div class="screen-body">
-                  <h4>Next open times</h4>
-                  <div class="muted small">${coach.lessonMinutes}-minute private lesson</div>
-                  <div class="mini-slots" id="next-slots"><span>…</span><span>…</span><span>…</span><span>…</span></div>
-                  <button class="primary block sm" data-act="${me && me.creditsRemaining ? "book" : "go"}" data-to="packages">Book a lesson</button>
-                </div>
-              </div></div>
             </div>
           </div>
         </section>
@@ -611,7 +581,7 @@ async function coachPage(slug) {
         <section class="section">
           <div class="eyebrow">How it works</div>
           <h2>Three steps to your first lesson</h2>
-          <div class="steps" style="margin-top:20px">
+          <div class="steps" style="margin-top:14px">
             <div class="step"><h3>Pick a package</h3><p class="muted" style="margin:0">Single lessons, multi-lesson packs that bring the price down, or a small group with friends.</p></div>
             <div class="step"><h3>Book your time</h3><p class="muted" style="margin:0">Choose from open times on the calendar. Reschedule online up to ${coach.cancelWindowHours} hours ahead.</p></div>
             <div class="step"><h3>Show up and train</h3><p class="muted" style="margin:0">Your remaining lessons and upcoming bookings are always in your account.</p></div>
@@ -620,7 +590,7 @@ async function coachPage(slug) {
 
         <section class="section" id="packages">
           <div class="eyebrow">Private lessons</div>
-          <div class="row spread" style="align-items:flex-end;margin-bottom:20px">
+          <div class="row spread" style="align-items:flex-end;margin-bottom:14px">
             <h2 style="margin:0">Packages</h2>
             <p class="muted small" style="margin:0">${pub.paymentsReady ? "Secure card payment through Stripe" : "Online payment isn't turned on yet"}</p>
           </div>
@@ -682,18 +652,9 @@ async function coachPage(slug) {
         <span class="brand" style="font-size:16px"><span class="mark" aria-hidden="true"></span>${esc(coach.name)}</span>
         <span>© ${new Date().getFullYear()} · <a href="/admin">Coach sign in</a></span>
       </div></footer>`;
-    fillNextSlots();
   }
 
-  async function fillNextSlots() {
-    const el = $("#next-slots"); if (!el) return;
-    try {
-      const r = await api("GET", `/c/${slug}/slots?from=${localDate(Date.now(), tz)}&days=14`);
-      const s = r.slots.slice(0, 4);
-      el.innerHTML = s.length ? s.map((x) => `<span>${fmtIn(tz, { weekday: "short" }).format(new Date(x))} ${fmtTime(x, tz)}</span>`).join("")
-        : `<span style="grid-column:1/-1">No open times yet</span>`;
-    } catch { el.innerHTML = ""; }
-  }
+
 
   app.onclick = async (e) => {
     const b = e.target.closest("[data-act]"); if (!b) return;
