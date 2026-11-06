@@ -21,6 +21,7 @@
   --ok: #5be49b; --ok-soft: rgba(91, 228, 155, .12);
   --gold-grad: linear-gradient(115deg, #6a4716 0%, #b0823b 22%, #dfbd82 42%, #a6773a 58%, #77501d 78%, #c39b5d 100%);
   --gold-text: linear-gradient(100deg, #94682a 0%, #dcbb80 30%, #ad7f3c 50%, #ecd3a0 62%, #8f6326 82%, #c39b5d 100%);
+  --gold-grade: grayscale(1) sepia(.55) saturate(1.5) hue-rotate(-6deg) brightness(.82) contrast(1.18);
   --radius: 16px; --radius-sm: 10px;
   --shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 20px 40px -20px rgba(0,0,0,.6);
   --glow: 0 0 0 1px rgba(176,130,59,.35), 0 10px 40px -10px rgba(176,130,59,.45);
@@ -118,6 +119,7 @@ details > summary::-webkit-details-marker { display: none; }
     radial-gradient(90% 90% at 10% 100%, rgba(176,130,59,.45), transparent 60%),
     linear-gradient(160deg, #1d1a12, #0a0a0a); min-height: 160px; }
 .ph.has-img { background: var(--surface-2); }
+.ph.graded img { filter: var(--gold-grade); }
 .ph.has-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .ph svg.fig { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); height: 86%; width: auto; opacity: .55; }
 .ph .ph-label { position: absolute; left: 12px; bottom: 12px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.85); background: rgba(5,5,5,.55); padding: 4px 9px; border-radius: 99px; backdrop-filter: blur(6px); }
@@ -128,7 +130,7 @@ details > summary::-webkit-details-marker { display: none; }
     radial-gradient(40% 50% at 10% 90%, rgba(220,192,143,.07), transparent 60%),
     linear-gradient(180deg, #0f0e0b, #030303); }
 .hero-photo { position: absolute; inset: 0 0 0 34%; background-size: cover; background-position: 62% 22%; opacity: .8;
-  filter: grayscale(1) sepia(.55) saturate(1.5) hue-rotate(-6deg) brightness(.82) contrast(1.18);
+  filter: var(--gold-grade);
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 38%, #000 100%); mask-image: linear-gradient(90deg, transparent 0%, #000 38%, #000 100%); }
 .hero-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,5,5,0) 40%, rgba(5,5,5,.6)); }
 .hero .lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -652,7 +654,7 @@ async function coachPage(slug) {
         ${groupPkgs.length ? `
         <section class="section" id="groups">
           <div class="band">
-            ${photo("Two fighters trading strikes in the cage", "55% 40%", PHOTOS.groups)}
+            ${photo("Two fighters trading strikes in the cage", "55% 40%", PHOTOS.groups).replace('class="ph has-img"', 'class="ph has-img graded"')}
             <div class="band-body">
               <div class="eyebrow">Small groups</div>
               <h2>Bring your crew</h2>
