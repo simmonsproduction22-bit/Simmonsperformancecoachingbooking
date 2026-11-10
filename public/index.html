@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Coach Booking</title>
+<title>Simmons Performance Coaching</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="theme-color" content="#050505">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -52,9 +54,19 @@ p { margin: 0 0 .75em; }
 /* Header */
 header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: rgba(5, 5, 5, .78); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); }
 header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 16px; }
-.brand { display: inline-flex; align-items: center; gap: 10px; font: 800 20px/1 var(--display); text-transform: uppercase; letter-spacing: .03em; text-decoration: none; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.mark { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 8px; background: var(--gold-grad); box-shadow: 0 0 18px rgba(176,130,59,.5); position: relative; }
-.mark::after { content: ""; position: absolute; inset: 7px; border-radius: 3px; background: var(--bg); }
+.brand { display: inline-flex; align-items: center; gap: 12px; font: 800 20px/1 var(--display); text-transform: uppercase; letter-spacing: .03em; text-decoration: none; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.logo-mark { position: relative; display: inline-block; flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; isolation: isolate;
+  box-shadow: 0 0 0 1px rgba(176,130,59,.4), 0 0 18px rgba(176,130,59,.28); }
+.logo-mark img { width: 100%; height: 100%; display: block; }
+/* Shine: a light band slides across, masked to the gold strokes so the black field stays black. */
+.logo-mark::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, transparent 40%, rgba(255,244,214,.95) 50%, transparent 60%) no-repeat;
+  background-size: 260% 100%; background-position: 130% 0; animation: logo-shine 5s ease-in-out infinite;
+  -webkit-mask-image: var(--logo-mask); mask-image: var(--logo-mask); -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
+@keyframes logo-shine { 0%, 55% { background-position: 130% 0; } 85%, 100% { background-position: -30% 0; } }
+.logo-mark.md { width: 84px; height: 84px; }
+.logo-mark.lg { width: clamp(160px, 20vw, 230px); height: clamp(160px, 20vw, 230px); box-shadow: 0 0 0 1px rgba(176,130,59,.45), 0 0 60px rgba(176,130,59,.25); }
+.logo-mark.lg::after { animation-delay: 1.2s; }
 .nav-links { display: flex; gap: 26px; font-size: 14px; font-weight: 600; }
 .nav-links a { color: var(--muted); text-decoration: none; cursor: pointer; }
 .nav-links a:hover { color: var(--text); }
@@ -163,7 +175,8 @@ details > summary::-webkit-details-marker { display: none; }
 .band > .ph { border-radius: 0; min-height: 230px; }
 .band .band-body { padding: clamp(20px, 3vw, 32px); display: flex; flex-direction: column; justify-content: center; }
 @media (max-width: 760px) { .band { grid-template-columns: 1fr; } .band > .ph { min-height: 200px; } }
-.band.solo { grid-template-columns: 1fr; }
+.band.solo { grid-template-columns: 1fr auto; align-items: center; }
+.band-logo { padding: 24px 40px 24px 0; }
 .band.solo .band-body { max-width: 760px; }
 .band.pink-edge { border-color: rgba(220,192,143,.3); }
 .your { border: 1px solid rgba(176,130,59,.45); box-shadow: var(--glow); }
@@ -217,6 +230,9 @@ details > summary::-webkit-details-marker { display: none; }
   .hide-sm { display: none !important; }
   header.top .wrap { height: 58px; gap: 10px; }
   .brand { font-size: 17px; white-space: normal; line-height: 1.05; overflow: visible; }
+  .brand .logo-mark { width: 34px; height: 34px; }
+  .band.solo { grid-template-columns: 1fr; }
+  .band-logo { display: none; }
   .section { margin: 28px 0; }
   .hero { margin-top: 12px; border-radius: 20px; }
   .hero-inner { padding: 22px 18px 44px; gap: 14px; }
@@ -264,7 +280,11 @@ function ph(label) {
     <span class="ph-label">${esc(label)}</span></div>`;
 }
 /** The coach's photo, cropped to fill its frame. */
-const PHOTOS = { coach: "/coach.jpg", hero: "/hero.jpg", groups: "/groups.jpg" };
+const PHOTOS = { coach: "/coach.jpg", hero: "/hero.jpg", groups: "/groups.jpg", logo: "/logo.webp", logoMask: "/logo-mask.webp" };
+/** The SPC badge with a gold light sweeping across it. */
+function logoMark(size = "") {
+  return `<span class="logo-mark ${size}" aria-hidden="true" style="--logo-mask:url('${PHOTOS.logoMask}')"><img src="${PHOTOS.logo}" alt=""></span>`;
+}
 function photo(alt, position = "50% 30%", src = PHOTOS.coach) {
   return `<div class="ph has-img"><img src="${src}" alt="${esc(alt)}" loading="lazy" style="object-position:${position}"></div>`;
 }
@@ -557,7 +577,7 @@ async function coachPage(slug) {
 
     app.innerHTML = `
       <header class="top"><div class="wrap">
-        <a class="brand" href="/${esc(slug)}"><span class="mark" aria-hidden="true"></span>${esc(coach.name)}</a>
+        <a class="brand" href="/${esc(slug)}">${logoMark()}${esc(coach.name)}</a>
         <nav class="nav-links" aria-label="Sections">
           <a data-act="go" data-to="packages">Lessons</a>
           ${groupPkgs.length ? `<a data-act="go" data-to="groups">Groups</a>` : ""}
@@ -677,6 +697,7 @@ async function coachPage(slug) {
               <p class="muted">On-site or group sessions built around your team's schedule and goals. Every program is quoted to fit, so tell us what you have in mind.</p>
               <div><button class="primary" data-act="quote">Request a quote</button></div>
             </div>
+            <div class="band-logo">${logoMark("lg")}</div>
           </div>
         </section>
 
@@ -701,7 +722,7 @@ async function coachPage(slug) {
         </section>
       </main>
       <footer><div class="wrap row spread">
-        <span class="brand" style="font-size:16px"><span class="mark" aria-hidden="true"></span>${esc(coach.name)}</span>
+        <span class="brand" style="font-size:16px">${logoMark()}${esc(coach.name)}</span>
         <span>© ${new Date().getFullYear()} · <a href="/admin">Coach sign in</a></span>
       </div></footer>`;
   }
@@ -881,7 +902,8 @@ async function coachApp() {
     const render = () => {
       app.innerHTML = `<header class="top"><div class="wrap"><span class="brand">Coach dashboard</span></div></header>
         <main class="wrap"><div class="auth card">
-          <h2>${mode === "login" ? "Sign in" : "Create your coach account"}</h2>
+          <div style="display:flex;justify-content:center;margin-bottom:14px">${logoMark("md")}</div>
+          <h2 style="text-align:center">${mode === "login" ? "Sign in" : "Create your coach account"}</h2>
           <form>
             ${mode === "signup" ? `
               <div class="field"><label for="c-name">Your name</label><input id="c-name" name="name" required autocomplete="name"></div>
@@ -925,7 +947,7 @@ async function coachApp() {
     const todo = setupSteps.filter((s) => !s[0]);
     app.innerHTML = `
       <header class="top"><div class="wrap">
-        <span class="brand"><span class="mark" aria-hidden="true"></span>${esc(d.coach.name)}</span>
+        <span class="brand">${logoMark()}${esc(d.coach.name)}</span>
         <div class="row" style="flex-wrap:nowrap;gap:8px"><a class="btn sm" href="/${esc(d.coach.slug)}" target="_blank" rel="noopener">My page</a><button class="sm ghost" data-act="logout">Sign out</button></div>
       </div></header>
       <main class="wrap">
