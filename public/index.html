@@ -3,7 +3,47 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Simmons Performance Coaching</title>
+<title>Simmons Performance Coaching | Private MMA, Muay Thai &amp; Grappling Lessons in Dallas</title>
+<!-- seo:start (search and link previews; __SITE_URL__ is filled in at deploy by scripts/stamp-site-url.mjs) -->
+<meta name="description" content="Private MMA, Muay Thai and grappling lessons in Dallas with Connor Simmons. Train at Fortis MMA, Iron MMA or at home. Small groups and corporate training. Book online.">
+<link rel="canonical" href="__SITE_URL__/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Simmons Performance Coaching">
+<meta property="og:title" content="Simmons Performance Coaching | The best hour of your day">
+<meta property="og:description" content="Private MMA, Muay Thai and grappling lessons in Dallas with Connor Simmons. Train at Fortis MMA, Iron MMA or at home. Small groups and corporate training. Book online.">
+<meta property="og:image" content="__SITE_URL__/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="__SITE_URL__/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Simmons Performance Coaching | The best hour of your day">
+<meta name="twitter:description" content="Private MMA, Muay Thai and grappling lessons in Dallas with Connor Simmons. Train at Fortis MMA, Iron MMA or at home. Small groups and corporate training. Book online.">
+<meta name="twitter:image" content="__SITE_URL__/og.jpg">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": ["SportsActivityLocation", "LocalBusiness"],
+  "name": "Simmons Performance Coaching",
+  "url": "__SITE_URL__/",
+  "image": "__SITE_URL__/og.jpg",
+  "logo": "__SITE_URL__/apple-touch-icon.png",
+  "description": "Private MMA, Muay Thai and grappling lessons in Dallas with Connor Simmons. Train at Fortis MMA, Iron MMA or at home. Small groups and corporate training. Book online.",
+  "email": "SimmonsMMA26@gmail.com",
+  "telephone": "+1-469-307-6899",
+  "priceRange": "$50–$125",
+  "address": {"@type": "PostalAddress", "addressLocality": "Dallas", "addressRegion": "TX", "addressCountry": "US"},
+  "areaServed": {"@type": "City", "name": "Dallas"},
+  "founder": {"@type": "Person", "name": "Connor Simmons", "jobTitle": "MMA and Muay Thai coach"},
+  "paymentAccepted": "Zelle, Cash App",
+  "makesOffer": [
+    {"@type": "Offer", "name": "12-Lesson Pack", "price": "1200", "priceCurrency": "USD"},
+    {"@type": "Offer", "name": "8-Lesson Pack", "price": "880", "priceCurrency": "USD"},
+    {"@type": "Offer", "name": "Single Lesson", "price": "125", "priceCurrency": "USD"},
+    {"@type": "Offer", "name": "Small Group Lesson (per person)", "price": "50", "priceCurrency": "USD"}
+  ]
+}
+</script>
+<!-- seo:end -->
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="theme-color" content="#050505">
@@ -192,6 +232,11 @@ details > summary::-webkit-details-marker { display: none; }
 .creds li { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text); }
 .creds li::before { content: ""; width: 6px; height: 6px; transform: rotate(45deg); background: var(--gold-grad); }
 .foot-contact { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; user-select: text; }
+.legal { max-width: 760px; padding-block: 36px 56px; }
+.legal h1 { font-size: clamp(34px, 6vw, 52px); margin-bottom: 6px; }
+.legal h2 { font-size: 22px; margin: 28px 0 8px; }
+.legal p, .legal li { color: var(--text-2, #d9d9d9); }
+.legal ul { padding-left: 20px; margin: 0; display: grid; gap: 6px; }
 /* Pay by Zelle / Cash App */
 .pay-sum { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--border-2); border-radius: 14px; background: var(--surface); margin-bottom: 16px; }
 .pay-step { display: flex; align-items: center; gap: 10px; font-weight: 800; margin: 18px 0 10px; }
@@ -288,6 +333,14 @@ details > summary::-webkit-details-marker { display: none; }
 </style>
 </head>
 <body>
+<!-- netlify-forms:start: hidden copies so Netlify detects these forms at deploy and emails each submission (set the address under Forms → Notifications) -->
+<div hidden aria-hidden="true">
+  <form name="contact" data-netlify="true" netlify-honeypot="bot-field"><input name="name"><input name="email"><input name="phone"><textarea name="message"></textarea><input name="page"><input name="bot-field"></form>
+  <form name="payment-submitted" data-netlify="true"><input name="name"><input name="email"><input name="phone"><input name="package"><input name="amount"><input name="method"><input name="review"></form>
+  <form name="quote-request" data-netlify="true"><input name="name"><input name="company"><input name="email"><input name="phone"><input name="group_size"><textarea name="message"></textarea></form>
+  <form name="lesson-booked" data-netlify="true"><input name="name"><input name="email"><input name="phone"><input name="when"><input name="where"><textarea name="note"></textarea></form>
+</div>
+<!-- netlify-forms:end -->
 <div id="app"></div>
 <script>
 "use strict";
@@ -311,6 +364,13 @@ function logoMark(size = "") {
 }
 function photo(alt, position = "50% 30%", src = PHOTOS.coach) {
   return `<div class="ph has-img"><img src="${src}" alt="${esc(alt)}" loading="lazy" style="object-position:${position}"></div>`;
+}
+const venueList = (v) => String(v || "").split(/\s*·\s*|\n/).map((x) => x.trim()).filter(Boolean);
+const isHome = (v) => /home/i.test(v);
+/** Sends a copy of a form to Netlify Forms, which emails it to the coach (same setup as the Fortis MMA site). */
+function notify(form, fields) {
+  const body = new URLSearchParams({ "form-name": form, ...Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, String(v ?? "")])) });
+  return fetch("/", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body }).catch(() => {});
 }
 const money = (c) => "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 });
 const store = {
@@ -479,8 +539,8 @@ function route() {
   const path = location.pathname.replace(/\/+$/, "") || "/";
   if (path === "/") return directoryPage();
   if (path === "/admin") return coachApp();
-  const slug = path.slice(1).split("/")[0].toLowerCase();
-  return coachPage(slug);
+  const [slug, sub] = path.slice(1).toLowerCase().split("/");
+  return coachPage(slug, sub);
 }
 
 async function directoryPage() {
@@ -505,7 +565,7 @@ async function directoryPage() {
 // ======================================================================
 // Public coach page + client area
 // ======================================================================
-async function coachPage(slug) {
+async function coachPage(slug, sub = "") {
   const tokenKey = "client:" + slug;
   let token = store.get(tokenKey);
   let pub, me = null;
@@ -518,7 +578,7 @@ async function coachPage(slug) {
     return;
   }
   const coach = pub.coach, tz = coach.timezone;
-  document.title = `${coach.name} · Lessons`;
+  document.title = `${coach.name} | Private lessons${coach.location ? " in " + coach.location : ""}`;
   // Remember an offer link across sign-up and the Stripe round trip; forget it once it's gone.
   store.set("offer:" + slug, pub.offer ? offerToken : null);
   const allPkgs = [...pub.packages, ...(pub.offer ? [pub.offer] : [])];
@@ -549,6 +609,7 @@ async function coachPage(slug) {
   }
 
   await loadMe();
+  if (sub === "privacy" || sub === "terms") return legalPage(sub);
   draw();
   if (justPaid && me?.creditsRemaining) bookSheet();
 
@@ -611,9 +672,10 @@ async function coachPage(slug) {
           ${groupPkgs.length ? `<a data-act="go" data-to="groups">Groups</a>` : ""}
           <a data-act="go" data-to="corporate">Corporate training</a>
           ${coach.bio ? `<a data-act="go" data-to="about">About</a>` : ""}
+          <a data-act="go" data-to="contact">Contact</a>
         </nav>
         <div class="row" style="flex-wrap:nowrap;gap:8px">
-          ${me ? `<span class="muted small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">${esc(me.client.name)}</span><button class="sm" data-act="logout">Sign out</button>`
+          ${me ? `<span class="muted small hide-sm" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">${esc(me.client.name)}</span><button class="sm" data-act="logout">Sign out</button>`
                : `<button class="sm ghost" data-act="login">Sign in</button>`}
           ${coach.contactPhone ? `<a class="btn sm primary call-btn" href="tel:+1${esc(coach.contactPhone.replace(/\D/g, "").slice(-10))}" aria-label="Call ${esc(coach.contactPhone)}">
             <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>Call</a>` : ""}
@@ -674,7 +736,7 @@ async function coachPage(slug) {
             <div class="list" style="margin-top:16px">
               ${upcoming.length ? upcoming.map((l) => `
                 <div class="item">
-                  <div class="grow"><div class="when">${fmtWhen(l.startsAt, tz)}</div><div class="muted small">${l.kind === "group" ? groupLabel(l.partySize) + " · " : ""}${coach.lessonMinutes} min${l.note ? " · " + esc(l.note) : ""}</div></div>
+                  <div class="grow"><div class="when">${fmtWhen(l.startsAt, tz)}</div><div class="muted small">${l.kind === "group" ? groupLabel(l.partySize) + " · " : ""}${l.location ? esc(l.location) : coach.lessonMinutes + " min"}${l.note ? " · " + esc(l.note) : ""}</div></div>
                   ${(Date.parse(l.startsAt) - Date.now()) / 3600e3 >= coach.cancelWindowHours ? `
                   <button class="sm" data-act="move" data-id="${l.id}">Reschedule</button>
                   <button class="sm danger" data-act="cancel" data-id="${l.id}">Cancel</button>`
@@ -711,7 +773,7 @@ async function coachPage(slug) {
         ${groupPkgs.length ? `
         <section class="section" id="groups">
           <div class="band">
-            ${photo("Connor Simmons competing in MMA", "55% 40%", PHOTOS.groups).replace('class="ph has-img"', 'class="ph has-img graded"')}
+            ${photo(`${coach.personName || "Coach"} competing in MMA`, "55% 40%", PHOTOS.groups).replace('class="ph has-img"', 'class="ph has-img graded"')}
             <div class="band-body">
               <div class="eyebrow">Small groups</div>
               <h2>Bring your crew</h2>
@@ -741,15 +803,39 @@ async function coachPage(slug) {
         ${coach.bio ? `
         <section class="section" id="about">
           <div class="band">
-            ${photo("Connor Simmons, coach at Simmons Performance Coaching", "45% 30%")}
+            ${photo(`${coach.personName || coach.name}, coach at ${coach.name}`, "45% 30%")}
             <div class="band-body">
-              <div class="eyebrow">About</div>
-              <h2>${esc(coach.name)}</h2>
+              <div class="eyebrow">Your coach</div>
+              <h2>About ${esc(coach.personName || coach.name)}</h2>
               ${coach.credentials ? `<ul class="creds">${coach.credentials.split(/\s*·\s*|\n/).filter(Boolean).map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}
               <p style="white-space:pre-line;color:#d9d9d9;margin:0">${esc(coach.bio)}</p>
             </div>
           </div>
         </section>` : ""}
+
+        <section class="section" id="contact">
+          <div class="band">
+            <div class="band-body">
+              <div class="eyebrow">Contact</div>
+              <h2>Send a message</h2>
+              <p class="muted">Questions about lessons, group packages or corporate training? Send a note and ${esc(coach.personName || coach.name)} will get back to you.</p>
+              ${coach.contactPhone ? `<p style="margin:0">Call or text <a href="tel:+1${esc(coach.contactPhone.replace(/\D/g, "").slice(-10))}">${esc(coach.contactPhone)}</a></p>` : ""}
+              ${coach.contactEmail ? `<p style="margin:4px 0 0">Email <a href="mailto:${esc(coach.contactEmail)}">${esc(coach.contactEmail)}</a></p>` : ""}
+            </div>
+            <div class="band-body">
+              <form id="contact-form" novalidate>
+                <div class="fields">
+                  <div class="field"><label for="ct-name">Name</label><input id="ct-name" name="name" required autocomplete="name"></div>
+                  <div class="field"><label for="ct-email">Email</label><input id="ct-email" name="email" type="email" required autocomplete="email"></div>
+                </div>
+                <div class="field"><label for="ct-phone">Phone (optional)</label><input id="ct-phone" name="phone" type="tel" autocomplete="tel"></div>
+                <div class="field"><label for="ct-msg">Message</label><textarea id="ct-msg" name="message" required></textarea></div>
+                <input name="bot-field" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
+                <button class="primary" type="submit">Send message</button><p class="err" role="status"></p>
+              </form>
+            </div>
+          </div>
+        </section>
 
         <section class="section">
           <div class="eyebrow">${coach.location || coach.venues ? "Where and policies" : "Policies"}</div>
@@ -766,9 +852,16 @@ async function coachPage(slug) {
         <span class="foot-contact">
           ${coach.contactEmail ? `<a href="mailto:${esc(coach.contactEmail)}">${esc(coach.contactEmail)}</a>` : ""}
           ${coach.contactPhone ? `<span>Call or text <a href="tel:+1${esc(coach.contactPhone.replace(/\D/g, "").slice(-10))}">${esc(coach.contactPhone)}</a></span>` : ""}
-          <span>© ${new Date().getFullYear()} · <a href="/admin">Coach sign in</a></span>
+          <span>© ${new Date().getFullYear()} · <a href="/${esc(slug)}/privacy">Privacy</a> · <a href="/${esc(slug)}/terms">Terms</a> · <a href="/admin">Coach sign in</a></span>
         </span>
       </div></footer>`;
+    const cf = $("#contact-form");
+    if (cf) handleForm(cf, async (f) => {
+      if (f["bot-field"]) return;
+      if (!f.name || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email || "") || !f.message) throw new Error("Add your name, a valid email and a message.");
+      await notify("contact", { name: f.name, email: f.email, phone: f.phone, message: f.message, page: slug });
+      cf.reset(); $(".err", cf).textContent = ""; toast("Message sent. Thanks!");
+    });
   }
 
 
@@ -852,6 +945,7 @@ async function coachPage(slug) {
       <div class="pay-step"><span>3</span>Upload your payment screenshot</div>
       <label class="drop" for="p-proof"><input id="p-proof" type="file" accept="image/*" required style="position:absolute;opacity:0;width:1px;height:1px">
         <span data-drop>Tap to choose a screenshot</span></label>
+      <input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
       <button class="primary block" type="submit" style="margin-top:14px">Submit for approval</button>
       <p class="muted small" style="text-align:center;margin:8px 0 0">Your lessons unlock as soon as ${esc(coach.name)} confirms the payment.</p>
       <p class="err"></p></form>`, (body, close) => {
@@ -869,6 +963,8 @@ async function coachPage(slug) {
       handleForm($("form", body), async (f) => {
         if (!proof) throw new Error("Add a screenshot of your payment.");
         const r = await api("POST", `/c/${slug}/manual-purchase`, { ...f, packageId: pkg.id, people, method, proof, offer: pkg.isOffer ? offerToken : undefined }, token);
+        notify("payment-submitted", { name: me?.client.name || f.name, email: r.email, phone: me?.client.phone || f.phone, package: pkg.name + (pkg.kind === "group" ? ` (group of ${people})` : ""),
+          amount: money(r.amountCents), method: method === "cashapp" ? "Cash App" : "Zelle", review: `${location.origin}/admin?tab=money` });
         if (r.token) { token = r.token; store.set(tokenKey, token); }
         await loadMe(); close(); draw();
         doneSheet(r);
@@ -887,6 +983,49 @@ async function coachPage(slug) {
       const f = $("form", body);
       if (f) handleForm(f, async (d) => { await api("POST", `/c/${slug}/password`, d, token); await loadMe(); draw(); toast("Password saved"); close(); });
     });
+  }
+
+  /** Privacy policy and terms, filled in from the coach's settings. */
+  function legalPage(kind) {
+    const who = coach.personName ? `${esc(coach.personName)} (${esc(coach.name)})` : esc(coach.name);
+    const contact = [coach.contactEmail && `email <a href="mailto:${esc(coach.contactEmail)}">${esc(coach.contactEmail)}</a>`,
+      coach.contactPhone && `call or text <a href="tel:+1${esc(coach.contactPhone.replace(/\D/g, "").slice(-10))}">${esc(coach.contactPhone)}</a>`].filter(Boolean).join(" or ") || "contact us";
+    const venues = venueList(coach.venues);
+    const updated = "November 2026";
+    const privacy = `
+      <h1>Privacy policy</h1><p class="muted">Last updated ${updated}</p>
+      <h2>Who we are</h2><p>This site is run by ${who}${coach.location ? `, ${esc(coach.location)}` : ""}. Questions about your information: ${contact}.</p>
+      <h2>What we collect</h2>
+      <ul><li><strong>Your details:</strong> name, email and (if you give it) phone number, when you buy lessons, book, or send a message.</li>
+        <li><strong>Payment screenshots:</strong> the image you upload to show your Zelle or Cash App payment, so we can confirm it.</li>
+        <li><strong>Bookings:</strong> lesson times, where you train, any notes you add, and an address if you book in-home training.</li>
+        <li><strong>Messages:</strong> what you send through the contact or corporate quote forms.</li>
+        <li><strong>Technical data:</strong> your IP address with payment submissions, used only to block spam.</li></ul>
+      <h2>How we use it</h2><p>To confirm payments, schedule and run your lessons, and reply to you. We don't sell your information, share it with advertisers, or use it for ads.</p>
+      <h2>Payments</h2><p>You pay directly by Zelle or Cash App. We never see your bank or card details; we only see the screenshot you upload and the payment in our own account.</p>
+      <h2>Where it's stored</h2><p>The site and its data are hosted by Netlify. Messages sent through the contact forms are delivered by email. Sign-in uses a token saved on your device; we don't use advertising cookies or trackers.</p>
+      <h2>Your choices</h2><p>You can ask to see, correct or delete your information at any time: ${contact}. We keep booking and payment records only as long as we need them for our business records.</p>
+      <h2>Children</h2><p>Lessons for anyone under 18 are booked by a parent or guardian, who provides the contact details.</p>
+      <h2>Changes</h2><p>If this policy changes, we'll update it here and change the date above.</p>`;
+    const terms = `
+      <h1>Terms</h1><p class="muted">Last updated ${updated}</p>
+      <h2>Lessons and packages</h2><p>Lessons are sold one at a time or in packages. Packages don't expire. Group lessons are priced per person for groups of 3 or more; group packages and corporate training are arranged directly.</p>
+      <h2>Payment</h2><p>Pay by Zelle or Cash App and upload a screenshot. Your lessons unlock once the payment is confirmed. If a payment can't be confirmed, the purchase is declined and you'll see why.</p>
+      <h2>Booking, rescheduling and cancelling</h2><p>Book online at least ${coach.minNoticeHours} hour${coach.minNoticeHours === 1 ? "" : "s"} ahead. You can reschedule or cancel online up to ${coach.cancelWindowHours} hours before a lesson and it goes back on your balance. Inside ${coach.cancelWindowHours} hours, or if you don't show up, the lesson counts as used.</p>
+      <h2>Refunds</h2><p>Lessons already taken aren't refundable. For unused lessons, ${contact} and we'll work it out with you.</p>
+      ${venues.length ? `<h2>Where lessons happen</h2><p>${venues.map(esc).join(", ")}. At a gym, follow that gym's rules. For in-home training, provide a safe, clear space and an accurate address.</p>` : ""}
+      <h2>Health and safety</h2><p>Combat sports and fitness training carry a risk of injury. By booking, you confirm you're healthy enough to train, you'll tell your coach about any injuries or conditions, and you take part at your own risk. Check with a doctor if you're unsure. Anyone under 18 needs a parent or guardian's permission.</p>
+      <h2>Contact</h2><p>Questions about these terms: ${contact}.</p>`;
+    document.title = `${kind === "privacy" ? "Privacy policy" : "Terms"} · ${coach.name}`;
+    app.innerHTML = `
+      <header class="top"><div class="wrap">
+        <a class="brand" href="/${esc(slug)}">${logoMark()}<span class="brand-name">${esc(coach.name)}</span></a>
+        <a class="btn sm" href="/${esc(slug)}">Back to the site</a>
+      </div></header>
+      <main class="wrap legal">${kind === "privacy" ? privacy : terms}
+        <p class="muted small" style="margin-top:28px"><a href="/${esc(slug)}/${kind === "privacy" ? "terms" : "privacy"}">${kind === "privacy" ? "Terms" : "Privacy policy"}</a> · <a href="/${esc(slug)}">${esc(coach.name)}</a></p>
+      </main>`;
+    window.scrollTo(0, 0);
   }
 
   function passwordSheet() {
@@ -933,6 +1072,7 @@ async function coachPage(slug) {
       <button class="primary block" type="submit">Send request</button><p class="err"></p></form>`, (body, close) => {
       handleForm($("form", body), async (f) => {
         await api("POST", `/c/${slug}/inquiries`, f);
+        notify("quote-request", { name: f.name, company: f.company, email: f.email, phone: f.phone, group_size: f.groupSize, message: f.message });
         close(); toast("Request sent. We'll be in touch.");
       });
     });
@@ -976,16 +1116,28 @@ async function coachPage(slug) {
       if (!choices.some((x) => x.key === key)) choices.push({ key, credit: c, label: c.kind === "group" ? groupLabel(c.partySize) : "Private lesson" });
     }
     let chosen = choices[0];
+    const venues = venueList(coach.venues);
+    let venue = venues.length === 1 ? venues[0] : "";
     sheet(moving ? "Reschedule lesson" : "Book a lesson", `
       ${moving ? `<p class="muted">Currently ${esc(fmtWhen(moving.startsAt, tz))}</p>` : ""}
       ${choices.length > 1 ? `<label>Which lesson?</label><div class="row" style="margin-bottom:14px">${choices.map((c, i) =>
         `<button class="slot ${i === 0 ? "on" : ""}" data-kind="${c.key}">${esc(c.label)}</button>`).join("")}</div>` : ""}
       <div data-picker></div>
+      ${moving || !venues.length ? "" : `<label style="margin-top:16px">Where?</label><div class="row" style="gap:8px">${venues.map((v) =>
+        `<button class="slot" data-venue="${esc(v)}">${esc(v)}</button>`).join("")}</div>
+        <div class="field hidden" data-addr style="margin-top:10px"><label for="b-addr">Address for in-home training</label><input id="b-addr" autocomplete="street-address" maxlength="160" placeholder="Street, city"></div>`}
       ${moving ? "" : `<div class="field" style="margin-top:14px"><label for="b-note">Anything to work on? (optional)</label><input id="b-note" maxlength="500"></div>`}
       <button class="primary block" data-go disabled style="margin-top:14px">Pick a time</button><p class="err"></p>`,
       (body, close) => {
         const go = $("[data-go]", body);
         body.addEventListener("click", (e) => {
+          const vb = e.target.closest("[data-venue]");
+          if (vb) {
+            venue = vb.dataset.venue;
+            body.querySelectorAll("[data-venue]").forEach((x) => x.classList.toggle("on", x === vb));
+            $("[data-addr]", body).classList.toggle("hidden", !isHome(venue));
+            return;
+          }
           const k = e.target.closest("[data-kind]"); if (!k) return;
           chosen = choices.find((c) => c.key === k.dataset.kind);
           body.querySelectorAll("[data-kind]").forEach((x) => x.classList.toggle("on", x === k));
@@ -997,7 +1149,14 @@ async function coachPage(slug) {
           go.disabled = true; $(".err", body).textContent = "";
           try {
             if (moving) await api("POST", `/c/${slug}/lessons/${moving.id}/reschedule`, { startsAt: pick }, token);
-            else await api("POST", `/c/${slug}/lessons`, { startsAt: pick, note: $("#b-note").value, purchaseId: chosen?.credit.purchaseId }, token);
+            else {
+              if (venues.length && !venue) throw new Error("Pick where you'd like to train.");
+              const addr = isHome(venue) ? $("#b-addr").value.trim() : "";
+              if (isHome(venue) && addr.length < 5) throw new Error("Add the address for in-home training.");
+              const where = venue ? (addr ? `${venue}: ${addr}` : venue) : "";
+              await api("POST", `/c/${slug}/lessons`, { startsAt: pick, note: $("#b-note").value, purchaseId: chosen?.credit.purchaseId, location: where }, token);
+              notify("lesson-booked", { name: me.client.name, email: me.client.email, phone: me.client.phone, when: fmtWhen(pick, tz), where, note: $("#b-note").value });
+            }
             close(); toast(moving ? "Lesson moved" : "Lesson booked"); await loadMe(); draw();
           } catch (x) { $(".err", body).textContent = x.message; go.disabled = false; }
         };
@@ -1144,7 +1303,7 @@ async function coachApp() {
   function lessonRow(l, closing) {
     return `<div class="item">
       <div class="grow"><div class="when">${fmtWhen(l.startsAt, tz())}</div>
-        <div class="muted small"><a href="#" data-act="client" data-id="${l.clientId}">${esc(l.clientName)}</a>${l.kind === "group" ? ` · <span class="pill accent">Group of ${l.partySize}</span>` : ""}${l.note ? " · " + esc(l.note) : ""}</div></div>
+        <div class="muted small"><a href="#" data-act="client" data-id="${l.clientId}">${esc(l.clientName)}</a>${l.kind === "group" ? ` · <span class="pill accent">Group of ${l.partySize}</span>` : ""}${l.location ? " · " + esc(l.location) : ""}${l.note ? " · " + esc(l.note) : ""}</div></div>
       ${closing ? `
         <button class="sm primary" data-act="close" data-status="completed" data-id="${l.id}">Done</button>
         <button class="sm" data-act="close" data-status="no_show" data-id="${l.id}">No-show</button>
@@ -1215,11 +1374,12 @@ async function coachApp() {
       <div class="field"><label for="cb-client">Client</label><select id="cb-client" name="clientId" required>
         ${withCredits.map((c) => `<option value="${c.id}" ${c.id == clientId ? "selected" : ""}>${esc(c.name)} (${c.credits} left)</option>`).join("")}</select></div>
       <div class="field"><label for="cb-when">Time (${esc(tzLabel(tz()))})</label><input id="cb-when" name="when" type="datetime-local" required></div>
+      ${venueList(d.coach.venues).length ? `<div class="field"><label for="cb-loc">Where</label><select id="cb-loc" name="location"><option value="">Not set</option>${venueList(d.coach.venues).map((v) => `<option>${esc(v)}</option>`).join("")}</select></div>` : ""}
       <div class="field"><label for="cb-note">Note</label><input id="cb-note" name="note" maxlength="500"></div>
       <p class="muted small">Pick a past time to log a lesson that already happened.</p>
       <button class="primary block" type="submit">Book</button><p class="err"></p></form>`, (body, close) => {
       handleForm($("form", body), async (f) => {
-        await api("POST", "/coach/lessons", { clientId: +f.clientId, startsAt: new Date(zonedToUtc(f.when, tz())).toISOString(), note: f.note }, token);
+        await api("POST", "/coach/lessons", { clientId: +f.clientId, startsAt: new Date(zonedToUtc(f.when, tz())).toISOString(), note: f.note, location: f.location || "" }, token);
         close(); toast("Lesson booked"); refresh();
       });
     });
@@ -1568,6 +1728,7 @@ async function coachApp() {
           <div class="field"><label for="s-slug">Page address</label><input id="s-slug" name="slug" value="${esc(c.slug)}" pattern="(?:[a-z0-9]|-){3,40}" required></div>
         </div>
         <div class="field"><label for="s-head">Headline (shown big on your page; 2–5 words works best)</label><input id="s-head" name="headline" value="${esc(c.headline)}" placeholder="The best hour of your day" maxlength="60"></div>
+        <div class="field"><label for="s-person">Your name (for the About section)</label><input id="s-person" name="personName" value="${esc(c.personName || "")}" placeholder="Connor Simmons" maxlength="80"></div>
         <div class="field"><label for="s-venues">Where you train (separate with ·)</label><input id="s-venues" name="venues" value="${esc(c.venues || "")}" placeholder="Fortis MMA · Iron MMA · In-home training" maxlength="300"></div>
         <div class="field"><label for="s-loc">Location</label><input id="s-loc" name="location" value="${esc(c.location)}" placeholder="Dallas, TX" maxlength="140"></div>
         <div class="field"><label for="s-bio">About you</label><textarea id="s-bio" name="bio" maxlength="4000">${esc(c.bio)}</textarea></div>

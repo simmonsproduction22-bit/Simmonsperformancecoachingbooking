@@ -4,6 +4,28 @@ A booking and payments site for private coaches. Clients buy lesson packages, th
 
 Built for one coach first, with multiple coaches supported from day one: each coach gets their own page at `/<their-name>`, their own clients and their own payouts.
 
+## Launch checklist (Simmons Performance Coaching)
+
+1. **Deploy on Netlify** from this repo. The build command (`node scripts/stamp-site-url.mjs`) fills in the site address for link previews, search info and the sitemap. Netlify Database is set up and every migration runs on deploy.
+2. **Create your coach account first** at `/admin`, using page address `simmons`. The very first account is filled in automatically from `src/defaults.ts`: name, headline, bio, credentials, Dallas location and training spots, contact email and phone, Zelle and Cash App, 12-hour cancel window, weekly hours (Mon–Fri 3–8 PM, Sat 9 AM–2 PM) and the four packages. Change anything in Settings.
+3. **Turn on email**, the same setup as the Fortis MMA site (Netlify Forms):
+   - In Netlify, open **Forms** and enable form detection, then redeploy once so the forms are picked up.
+   - Under **Forms → Form notifications → Add notification → Email**, send to `SimmonsMMA26@gmail.com`. Add one for each form (or "Any form"):
+     - `contact`: "Send a message" on the page
+     - `payment-submitted`: someone paid by Zelle or Cash App and is waiting for approval (includes a link to review it)
+     - `quote-request`: corporate training quote requests
+     - `lesson-booked`: a client booked a lesson (time, place and any in-home address)
+4. **Domain:** add your domain under Domain management and redeploy, so link previews use it.
+
+### Pages
+- `/<slug>`: the coach page. `/<slug>/privacy` and `/<slug>/terms`: privacy policy and terms (drafts written from how the site works; review them).
+- `/admin`: the coach dashboard.
+
+### Spam protection on Zelle / Cash App payments
+- A hidden honeypot field stops simple bots.
+- Each sender (by IP) can submit 5 payments a day; at most 60 can wait for review at once.
+- Screenshots are shrunk in the browser and capped at 2 MB on the server.
+
 ## Paying by Zelle or Cash App (default)
 
 No account is needed to buy. On any package the client:

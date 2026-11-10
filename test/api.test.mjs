@@ -9,14 +9,19 @@ process.env.PAYMENTS_MODE ??= "fake";
 const { default: handler } = await import("../netlify/functions/api.mts");
 const { q } = await import("../src/db.ts");
 
-async function call(method, path, body, token) {
+async function call(method, path, body, token, extra = {}) {
   const res = await handler(new Request(`http://localhost${path}`, {
-    method, headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
+    method, headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}), ...extra },
     body: body ? JSON.stringify(body) : undefined,
   }));
   return { status: res.status, body: await res.json() };
 }
 const ok = (r, status = 200) => { assert.equal(r.status, status, JSON.stringify(r.body)); return r.body; };
+// The first coach account gets the site's own setup (src/defaults.ts). Generic tests start from a blank coach.
+async function blankCoach() {
+  await q(`DELETE FROM packages`); await q(`DELETE FROM availability`);
+  await q(`UPDATE coaches SET venues = '', zelle_handle = '', cashapp_tag = '', person_name = '', credentials = '', contact_email = '', contact_phone = '', cancel_window_hours = 24, min_notice_hours = 12`);
+}
 
 test("time zone conversion handles DST", () => {
   // 9:00 in Chicago: CDT (UTC-5) in July, CST (UTC-6) in December.
@@ -48,6 +53,7 @@ test("full flow: buy, book, reschedule, cancel, complete, release, refund", asyn
 
   // Owner signs up with no code; a second coach can't without one.
   const coach = ok(await call("POST", "/api/coach/signup", { name: "Sam Coach", email: "sam@example.com", slug: "sam", password: "longpassword1", timezone: "America/Chicago" }), 201).token;
+  await blankCoach();
   assert.equal((await call("POST", "/api/coach/signup", { name: "X", email: "x@example.com", slug: "xx-coach", password: "longpassword1" })).status, 403);
 
   ok(await call("PUT", "/api/coach/profile", { bio: "Hi", minNoticeHours: 1, cancelWindowHours: 24, maxDaysAhead: 60 }, coach));
@@ -146,6 +152,7 @@ test("full flow: buy, book, reschedule, cancel, complete, release, refund", asyn
 test("groups, private offers, quote requests, starter packages", async () => {
   await q(`TRUNCATE coaches, clients, sessions, packages, purchases, availability, time_off, lessons, releases, inquiries, payment_proofs RESTART IDENTITY CASCADE`);
   const coach = ok(await call("POST", "/api/coach/signup", { name: "Sam", email: "sam@example.com", slug: "sam", password: "longpassword1" }), 201).token;
+  await blankCoach();
   ok(await call("PUT", "/api/coach/profile", { minNoticeHours: 0 }, coach));
   ok(await call("PUT", "/api/coach/availability", { windows: [0, 1, 2, 3, 4, 5, 6].map((d) => ({ weekday: d, startMin: 0, endMin: 1440 })) }, coach));
 
@@ -213,6 +220,7 @@ test("groups, private offers, quote requests, starter packages", async () => {
 test("pay by Zelle or Cash App without an account, coach approves", async () => {
   await q(`TRUNCATE coaches, clients, sessions, packages, purchases, availability, time_off, lessons, releases, inquiries, payment_proofs RESTART IDENTITY CASCADE`);
   const coach = ok(await call("POST", "/api/coach/signup", { name: "Sam", email: "sam@example.com", slug: "sam", password: "longpassword1" }), 201).token;
+  await blankCoach();
   ok(await call("PUT", "/api/coach/profile", { minNoticeHours: 0, zelleHandle: "pay@sam.example", cashappTag: "SamCoaching" }, coach));
   ok(await call("PUT", "/api/coach/availability", { windows: [0, 1, 2, 3, 4, 5, 6].map((d) => ({ weekday: d, startMin: 0, endMin: 1440 })) }, coach));
   ok(await call("POST", "/api/coach/starter-packages", {}, coach), 201);
@@ -282,4 +290,42 @@ test("pay by Zelle or Cash App without an account, coach approves", async () => 
 
   // A bad $cashtag is refused.
   assert.equal((await call("PUT", "/api/coach/profile", { cashappTag: "$not valid!" }, coach)).status, 400);
+});
+
+test("first coach gets the site setup; lesson locations; spam limits", async () => {
+  await q(`TRUNCATE coaches, clients, sessions, packages, purchases, availability, time_off, lessons, releases, inquiries, payment_proofs RESTART IDENTITY CASCADE`);
+  const coach = ok(await call("POST", "/api/coach/signup", { name: "Simmons Performance Coaching", email: "connor@example.com", slug: "simmons", password: "longpassword1" }), 201).token;
+  const pub = ok(await call("GET", "/api/c/simmons"));
+  assert.equal(pub.coach.personName, "Connor Simmons");
+  assert.equal(pub.coach.headline, "The best hour of your day");
+  assert.equal(pub.coach.location, "Dallas, TX");
+  assert.equal(pub.coach.payment.zelle, "4693076899");
+  assert.equal(pub.coach.payment.cashapp, "$ConnorSimmons2022");
+  assert.equal(pub.coach.contactEmail, "SimmonsMMA26@gmail.com");
+  assert.doesNotMatch(pub.coach.bio + pub.coach.credentials, /amateur/i);
+  assert.deepEqual(pub.packages.map((p) => p.name), ["12-Lesson Pack", "8-Lesson Pack", "Single Lesson", "Small Group Lesson"]);
+  const dash = ok(await call("GET", "/api/coach/dashboard", null, coach));
+  assert.equal(dash.availability.length, 6);
+
+  // Buy, approve, then book: a location is required; in-home needs an address.
+  ok(await call("PUT", "/api/coach/profile", { minNoticeHours: 0 }, coach));
+  ok(await call("PUT", "/api/coach/availability", { windows: [0, 1, 2, 3, 4, 5, 6].map((d) => ({ weekday: d, startMin: 0, endMin: 1440 })) }, coach));
+  const proof = "data:image/jpeg;base64," + Buffer.alloc(2000, 7).toString("base64");
+  const ipA = { "x-nf-client-connection-ip": "203.0.113.5" };
+  const r = ok(await call("POST", "/api/c/simmons/manual-purchase", { packageId: pub.packages[2].id, method: "zelle", name: "Kai", email: "kai@example.com", proof }, null, ipA), 201);
+  ok(await call("POST", `/api/coach/purchases/${r.purchaseId}/approve`, {}, coach));
+  const slot = new Date(Math.ceil((Date.now() + 2 * 864e5) / 36e5) * 36e5).toISOString();
+  assert.match((await call("POST", "/api/c/simmons/lessons", { startsAt: slot }, r.token)).body.error, /where/);
+  assert.match((await call("POST", "/api/c/simmons/lessons", { startsAt: slot, location: "Somewhere else" }, r.token)).body.error, /training locations/);
+  assert.match((await call("POST", "/api/c/simmons/lessons", { startsAt: slot, location: "In-home training" }, r.token)).body.error, /address/);
+  const l = ok(await call("POST", "/api/c/simmons/lessons", { startsAt: slot, location: "In-home training: 1200 Main St, Dallas" }, r.token), 201).lesson;
+  assert.equal(l.location, "In-home training: 1200 Main St, Dallas");
+  const me = ok(await call("GET", "/api/c/simmons/me", null, r.token));
+  assert.equal(me.lessons[0].location, "In-home training: 1200 Main St, Dallas");
+
+  // Spam: honeypot refused; 5 submissions per sender per day.
+  assert.equal((await call("POST", "/api/c/simmons/manual-purchase", { packageId: pub.packages[2].id, method: "zelle", name: "Bot", email: "bot@example.com", proof, website: "x" }, null, ipA)).status, 400);
+  for (let i = 0; i < 4; i++) ok(await call("POST", "/api/c/simmons/manual-purchase", { packageId: pub.packages[2].id, method: "zelle", name: "S" + i, email: `s${i}@example.com`, proof }, null, ipA), 201);
+  assert.equal((await call("POST", "/api/c/simmons/manual-purchase", { packageId: pub.packages[2].id, method: "zelle", name: "S9", email: "s9@example.com", proof }, null, ipA)).status, 429);
+  ok(await call("POST", "/api/c/simmons/manual-purchase", { packageId: pub.packages[2].id, method: "zelle", name: "Other", email: "o@example.com", proof }, null, { "x-nf-client-connection-ip": "198.51.100.7" }), 201);
 });

@@ -1,6 +1,7 @@
 # Netlify site config: publish public/, functions in netlify/functions.
 [build]
   publish = "public"
+  command = "node scripts/stamp-site-url.mjs"
 
 [functions]
   node_bundler = "esbuild"

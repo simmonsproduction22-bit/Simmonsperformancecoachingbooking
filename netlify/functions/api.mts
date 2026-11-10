@@ -13,6 +13,7 @@ import {
 import { payments, paymentsConfigured } from "../../src/payments.ts";
 import { localDate, openSlots, validTimeZone, type Busy } from "../../src/time.ts";
 import { randomBytes } from "node:crypto";
+import { FIRST_COACH_SETUP, STARTER_PACKAGES } from "../../src/defaults.ts";
 
 // ---------- helpers ----------
 
@@ -25,9 +26,12 @@ async function body(req: Request): Promise<Record<string, any>> {
 }
 const str = (v: unknown, max = 200) => String(v ?? "").trim().slice(0, max);
 const int = (v: unknown) => (Number.isInteger(Number(v)) ? Number(v) : NaN);
+/** The caller's IP as Netlify reports it (used only for rate limits). */
+const clientIp = (req: Request) =>
+  str(req.headers.get("x-nf-client-connection-ip") || (req.headers.get("x-forwarded-for") || "").split(",")[0], 64);
 const origin = (req: Request) => process.env.URL && !process.env.NETLIFY_DEV ? process.env.URL : new URL(req.url).origin;
 
-const RESERVED = new Set(["api", "admin", "coach", "login", "signup", "assets", "static", "app", "www", "help", "about"]);
+const RESERVED = new Set(["api", "admin", "coach", "login", "signup", "assets", "static", "app", "www", "help", "about", "privacy", "terms"]);
 const validSlug = (s: string) => /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/.test(s) && !RESERVED.has(s);
 
 const COACH_PUBLIC = `id, slug, name, headline, bio, location, timezone, lesson_minutes, cancel_window_hours,
@@ -39,7 +43,7 @@ function publicCoach(c: any) {
     lessonMinutes: c.lesson_minutes, cancelWindowHours: c.cancel_window_hours,
     minNoticeHours: c.min_notice_hours, maxDaysAhead: c.max_days_ahead,
     payment: { zelle: c.zelle_handle || "", cashapp: c.cashapp_tag || "", note: c.payment_note || "" },
-    contactEmail: c.contact_email || "", contactPhone: c.contact_phone || "", credentials: c.credentials || "", venues: c.venues || "",
+    contactEmail: c.contact_email || "", contactPhone: c.contact_phone || "", credentials: c.credentials || "", venues: c.venues || "", personName: c.person_name || "",
   };
 }
 function pkgOut(p: any, forCoach = false) {
@@ -67,7 +71,7 @@ function lessonOut(l: any) {
   return {
     id: l.id, startsAt: l.starts_at, endsAt: l.ends_at, status: l.status, note: l.client_note,
     purchaseId: l.purchase_id, clientId: l.client_id, clientName: l.client_name,
-    releaseStatus: l.release_status ?? null,
+    releaseStatus: l.release_status ?? null, location: l.location ?? "",
     kind: l.package_kind ?? "private", partySize: l.party_size ?? 1,
   };
 }
@@ -92,7 +96,7 @@ function decodeProof(v: unknown): { mime: string; data: Buffer } {
   if (!m) throw new UserError("Attach a screenshot of your payment.");
   const data = Buffer.from(m[2], "base64");
   if (data.length < 500) throw new UserError("That screenshot looks empty. Try another one.");
-  if (data.length > 4 * 1024 * 1024) throw new UserError("That screenshot is too large. Try a smaller one.");
+  if (data.length > 2 * 1024 * 1024) throw new UserError("That screenshot is too large. Try a smaller one.");
   return { mime: m[1], data };
 }
 
@@ -137,7 +141,22 @@ async function assertBookable(t: Q, coach: any, start: number, excludeLessonId: 
   if (!open.includes(start)) throw new UserError("That time was just taken or isn't available. Pick another.", 409);
 }
 
-async function bookLesson(coach: any, clientId: number, start: number, note: string, asCoach: boolean, purchaseId = 0) {
+/** Where a lesson happens: one of the coach's venues, optionally followed by details (an address for in-home). */
+function lessonLocation(coach: any, raw: unknown, required: boolean): string {
+  const loc = str(raw, 200);
+  const venues = String(coach.venues || "").split(/\s*·\s*|\n/).map((v) => v.trim()).filter(Boolean);
+  if (!loc) {
+    if (required && venues.length) throw new UserError("Pick where you'd like to train.");
+    return "";
+  }
+  if (venues.length && !venues.some((v) => loc.toLowerCase() === v.toLowerCase() || loc.toLowerCase().startsWith(v.toLowerCase() + ":"))) {
+    throw new UserError("Pick one of the training locations.");
+  }
+  if (/home/i.test(loc) && !/:\s*\S{4,}/.test(loc) && required) throw new UserError("Add the address for in-home training.");
+  return loc;
+}
+
+async function bookLesson(coach: any, clientId: number, start: number, note: string, asCoach: boolean, purchaseId = 0, location = "") {
   return tx(async (t) => {
     await t(`SELECT pg_advisory_xact_lock($1)`, [coach.id]);        // one booking at a time per coach
     await assertBookable(t, coach, start, 0, asCoach);
@@ -149,9 +168,9 @@ async function bookLesson(coach: any, clientId: number, start: number, note: str
         : "No lessons left. Buy a package to book.", 402);
     }
     const [l] = await t(
-      `INSERT INTO lessons (coach_id, client_id, purchase_id, starts_at, ends_at, client_note)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [coach.id, clientId, credit.id, new Date(start), new Date(start + coach.lesson_minutes * 60_000), note]);
+      `INSERT INTO lessons (coach_id, client_id, purchase_id, starts_at, ends_at, client_note, location)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [coach.id, clientId, credit.id, new Date(start), new Date(start + coach.lesson_minutes * 60_000), note, location]);
     return { ...l, package_kind: credit.package_kind, party_size: credit.party_size };
   });
 }
@@ -190,8 +209,20 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
       `SELECT * FROM packages WHERE id = $1 AND coach_id = $2 AND active AND (offer_token IS NULL OR offer_token = $3)`,
       [int(d.packageId), coach.id, str(d.offer, 100)]);
     if (!pkg) return fail(404, "That package isn't available.");
+    if (str(d.website)) return fail(400, "Something went wrong. Try again.");      // honeypot: only bots fill it
     const people = partySize(pkg, d.people);
     const proof = decodeProof(d.proof);
+    // Rate limits: a handful per sender per day, and a cap on how much can wait for review at once.
+    const ip = clientIp(req);
+    if (ip) {
+      const [{ n: fromIp }] = await q(
+        `SELECT COUNT(*)::int AS n FROM purchases WHERE coach_id = $1 AND submit_ip = $2 AND submitted_at > NOW() - INTERVAL '1 day'`,
+        [coach.id, ip]);
+      if (fromIp >= 5) return fail(429, "Too many payments from this device today. Contact your coach directly.");
+    }
+    const [{ n: waitingNow }] = await q(
+      `SELECT COUNT(*)::int AS n FROM purchases WHERE coach_id = $1 AND status = 'pending' AND method IN ('zelle', 'cashapp')`, [coach.id]);
+    if (waitingNow >= 60) return fail(429, "Payments are backed up right now. Contact your coach directly.");
 
     // Signed-in clients buy on their own account; everyone else is matched or created by email.
     const sessionClientId = await sessionUser(req, "client");
@@ -220,6 +251,7 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
            package_kind, party_size, submitted_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, NOW()) RETURNING *`,
         [coach.id, client.id, pkg.id, pkg.name, pkg.lesson_count, packageTotal(pkg, people), method, pkg.kind, people]);
+      if (ip) await t(`UPDATE purchases SET submit_ip = $2 WHERE id = $1`, [p.id, ip]);
       await t(`INSERT INTO payment_proofs (purchase_id, mime, data) VALUES ($1, $2, $3)`, [p.id, proof.mime, proof.data]);
       return p;
     });
@@ -359,7 +391,7 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
 
   if (m === "POST" && a === "lessons" && !b) {
     const d = await body(req);
-    const l = await bookLesson(coach, client.id, Date.parse(String(d.startsAt)), str(d.note, 500), false, int(d.purchaseId) || 0);
+    const l = await bookLesson(coach, client.id, Date.parse(String(d.startsAt)), str(d.note, 500), false, int(d.purchaseId) || 0, lessonLocation(coach, d.location, true));
     return json({ lesson: lessonOut(l) }, 201);
   }
 
@@ -473,6 +505,32 @@ async function coachDashboard(coach: any) {
   };
 }
 
+/** Fills the owner's account with the site's setup (src/defaults.ts): profile, payment details, hours, packages. */
+async function applyFirstCoachSetup(coachId: number) {
+  const s = FIRST_COACH_SETUP;
+  await tx(async (t) => {
+    await t(
+      `UPDATE coaches SET person_name = $2, headline = $3, bio = $4, location = $5, venues = $6, credentials = $7,
+         contact_email = $8, contact_phone = $9, zelle_handle = $10, cashapp_tag = $11, timezone = $12,
+         cancel_window_hours = $13, min_notice_hours = $14 WHERE id = $1`,
+      [coachId, s.person_name, s.headline, s.bio, s.location, s.venues, s.credentials, s.contact_email, s.contact_phone,
+       s.zelle_handle, s.cashapp_tag, s.timezone, s.cancel_window_hours, s.min_notice_hours]);
+    for (const w of s.availability) {
+      await t(`INSERT INTO availability (coach_id, weekday, start_min, end_min) VALUES ($1, $2, $3, $4)`, [coachId, w.weekday, w.start, w.end]);
+    }
+    await insertStarterPackages(t, coachId);
+  });
+}
+
+async function insertStarterPackages(t: Q, coachId: number) {
+  for (const [name, desc, count, price, kind, minP, maxP, sort] of STARTER_PACKAGES) {
+    await t(
+      `INSERT INTO packages (coach_id, name, description, lesson_count, price_cents, expires_days, sort_order, kind, min_people, max_people)
+       VALUES ($1, $2, $3, $4, $5, 0, $6, $7, $8, $9)`,
+      [coachId, name, desc, count, price, sort, kind, minP, maxP]);
+  }
+}
+
 async function coachRoutes(req: Request, parts: string[]): Promise<Response> {
   const [a, b, c] = parts;
   const m = req.method;
@@ -494,6 +552,7 @@ async function coachRoutes(req: Request, parts: string[]): Promise<Response> {
     const [row] = await q(
       `INSERT INTO coaches (slug, email, password_hash, name, timezone) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
       [slug, email, await hashPassword(pw), name, tz]);
+    if (n === 0) await applyFirstCoachSetup(row.id);
     return json({ token: await createSession("coach", row.id) }, 201);
   }
 
@@ -542,6 +601,7 @@ async function coachRoutes(req: Request, parts: string[]): Promise<Response> {
        n(d.maxDaysAhead, coach.max_days_ahead, 1, 365),
        n(d.cancelWindowHours, coach.cancel_window_hours, 0, 168)]);
     if (d.venues !== undefined) await q(`UPDATE coaches SET venues = $2 WHERE id = $1`, [coach.id, str(d.venues, 300)]);
+    if (d.personName !== undefined) await q(`UPDATE coaches SET person_name = $2 WHERE id = $1`, [coach.id, str(d.personName, 80)]);
     if (d.contactEmail !== undefined || d.contactPhone !== undefined || d.credentials !== undefined) {
       const ce = d.contactEmail === undefined ? coach.contact_email : str(d.contactEmail, 254);   // keep the capitalization as typed
       if (ce && !validEmail(normEmail(ce))) return fail(400, "Enter a valid contact email, or leave it blank.");
@@ -626,18 +686,7 @@ async function coachRoutes(req: Request, parts: string[]): Promise<Response> {
     // One-tap starting lineup: $125 single, 8-pack at $110, 12-pack at $100, plus $50/person small groups.
     const [{ n }] = await q(`SELECT COUNT(*)::int AS n FROM packages WHERE coach_id = $1`, [coach.id]);
     if (n > 0) return fail(409, "You already have packages.");
-    const starter: [string, string, number, number, string, number, number, number][] = [
-      ["12-Lesson Pack", "Twelve private lessons at $100 each. Best value.", 12, 120000, "private", 1, 1, 10],
-      ["8-Lesson Pack", "Eight private lessons at $110 each.", 8, 88000, "private", 1, 1, 20],
-      ["Single Lesson", "One private lesson.", 1, 12500, "private", 1, 1, 30],
-      ["Small Group Lesson", "Bring your crew: one lesson for a group of 3 or more. Price is per person.", 1, 5000, "group", 3, 10, 40],
-    ];
-    for (const [name, desc, count, price, kind, minP, maxP, sort] of starter) {
-      await q(
-        `INSERT INTO packages (coach_id, name, description, lesson_count, price_cents, expires_days, sort_order, kind, min_people, max_people)
-         VALUES ($1, $2, $3, $4, $5, 0, $6, $7, $8, $9)`,
-        [coach.id, name, desc, count, price, sort, kind, minP, maxP]);
-    }
+    await insertStarterPackages(q, coach.id);
     return json({ ok: true }, 201);
   }
 
@@ -733,7 +782,7 @@ async function coachRoutes(req: Request, parts: string[]): Promise<Response> {
     const d = await body(req);
     const [cl] = await q(`SELECT id FROM clients WHERE id = $1 AND coach_id = $2`, [int(d.clientId), coach.id]);
     if (!cl) return fail(404, "Pick a client.");
-    const l = await bookLesson(coach, cl.id, Date.parse(String(d.startsAt)), str(d.note, 500), true, int(d.purchaseId) || 0);
+    const l = await bookLesson(coach, cl.id, Date.parse(String(d.startsAt)), str(d.note, 500), true, int(d.purchaseId) || 0, lessonLocation(coach, d.location, false));
     return json({ lesson: lessonOut(l) }, 201);
   }
 
