@@ -2,10 +2,11 @@
 // automatically, so the live site starts out matching the demo. Everything stays editable in Settings.
 
 export const STARTER_PACKAGES: [name: string, description: string, lessons: number, priceCents: number,
-  kind: "private" | "group", minPeople: number, maxPeople: number, sortOrder: number][] = [
+  kind: "private" | "group", minPeople: number, maxPeople: number, sortOrder: number, firstTimeOnly?: boolean][] = [
   ["12-Lesson Pack", "Twelve private lessons at $100 each. Best value.", 12, 120000, "private", 1, 1, 10],
   ["8-Lesson Pack", "Eight private lessons at $110 each.", 8, 88000, "private", 1, 1, 20],
   ["Single Lesson", "One private lesson.", 1, 12500, "private", 1, 1, 30],
+  ["Intro Lesson", "Your first private lesson at an intro price. New clients only.", 1, 6000, "private", 1, 1, 35, true],
   ["Small Group Lesson", "Bring your crew: one lesson for a group of 3 or more. Price is per person.", 1, 5000, "group", 3, 10, 40],
 ];
 

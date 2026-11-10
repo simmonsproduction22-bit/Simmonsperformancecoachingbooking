@@ -45,7 +45,7 @@ function publicCoach(c: any) {
     slug: c.slug, name: c.name, headline: c.headline, bio: c.bio, location: c.location, timezone: c.timezone,
     lessonMinutes: c.lesson_minutes, cancelWindowHours: c.cancel_window_hours,
     minNoticeHours: c.min_notice_hours, maxDaysAhead: c.max_days_ahead,
-    payment: { zelle: c.zelle_handle || "", cashapp: c.cashapp_tag || "", note: c.payment_note || "" },
+    payment: { zelle: c.zelle_handle || "", cashapp: c.cashapp_tag || "", note: c.payment_note || "", card: paymentsConfigured() },
     contactEmail: c.contact_email || "", contactPhone: c.contact_phone || "", credentials: c.credentials || "", venues: c.venues || "", personName: c.person_name || "",
   };
 }
@@ -54,6 +54,7 @@ function pkgOut(p: any, forCoach = false) {
     id: p.id, name: p.name, description: p.description, lessonCount: p.lesson_count, priceCents: p.price_cents,
     expiresDays: p.expires_days, active: p.active, sortOrder: p.sort_order,
     kind: p.kind, minPeople: p.min_people, maxPeople: p.max_people, isOffer: Boolean(p.offer_token),
+    firstTimeOnly: Boolean(p.first_time_only),
     ...(forCoach ? { offerToken: p.offer_token, offerFor: p.offer_for } : {}),
   };
 }
@@ -91,7 +92,7 @@ function purchaseOut(p: any) {
   };
 }
 
-const METHOD_LABEL: Record<string, string> = { zelle: "Zelle", cashapp: "Cash App", offline: "in person", card: "card" };
+const METHOD_LABEL: Record<string, string> = { zelle: "Zelle", cashapp: "Cash App", offline: "in person", card: "card", stripe: "card (Stripe)" };
 
 /** Decodes a screenshot sent as a data: URL. Throws a UserError if it isn't a reasonable image. */
 function decodeProof(v: unknown): { mime: string; data: Buffer } {
@@ -179,6 +180,30 @@ async function bookLesson(coach: any, clientId: number, start: number, note: str
   });
 }
 
+/** Confirms a Stripe purchase; the first time it turns paid, emails the coach through the payment-submitted form. */
+async function confirmAndNotify(purchaseId: number): Promise<boolean> {
+  const [before] = await q(`SELECT status FROM purchases WHERE id = $1`, [purchaseId]);
+  const paid = await confirmPurchase(purchaseId);
+  if (paid && before?.status === "pending") {
+    const [p] = await q(
+      `SELECT p.*, c.name, c.email, c.phone FROM purchases p JOIN clients c ON c.id = p.client_id WHERE p.id = $1`, [purchaseId]);
+    const site = process.env.URL;
+    if (p && site) {
+      const fields = {
+        "form-name": "payment-submitted", name: p.name, email: p.email, phone: p.phone || "",
+        package: p.package_name + (p.package_kind === "group" ? ` (group of ${p.party_size})` : ""),
+        amount: `$${(p.amount_cents / 100).toFixed(2)}`, method: "Card (Stripe), already paid. Nothing to approve.",
+        review: `${site}/admin?tab=money`,
+      };
+      await fetch(`${site}/`, {
+        method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(fields).toString(),
+      }).catch(() => {});
+    }
+  }
+  return paid;
+}
+
 const hoursUntil = (d: any) => (+new Date(d) - Date.now()) / 3_600_000;
 
 // ---------- public + client routes ----------
@@ -202,11 +227,13 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
     });
   }
 
-  if (m === "POST" && a === "manual-purchase") {
-    // No account needed: name + email + screenshot. The account is created from the email if it's new.
+  if (m === "POST" && (a === "manual-purchase" || a === "card-purchase")) {
+    // No account needed: name + email (+ a screenshot for Zelle / Cash App). The account is created from the email if it's new.
     const d = await body(req);
-    const method = d.method === "cashapp" ? "cashapp" : d.method === "zelle" ? "zelle" : "";
+    const card = a === "card-purchase";
+    const method = card ? "stripe" : d.method === "cashapp" ? "cashapp" : d.method === "zelle" ? "zelle" : "";
     if (!method) return fail(400, "Pick Zelle or Cash App.");
+    if (card && !paymentsConfigured()) return fail(503, "Card payments aren't turned on yet. Pick Zelle or Cash App.");
     if (method === "zelle" && !coach.zelle_handle) return fail(400, "Zelle isn't set up yet. Pick another way to pay.");
     if (method === "cashapp" && !coach.cashapp_tag) return fail(400, "Cash App isn't set up yet. Pick another way to pay.");
     const [pkg] = await q(
@@ -215,18 +242,20 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
     if (!pkg) return fail(404, "That package isn't available.");
     if (str(d.website)) return fail(400, "Something went wrong. Try again.");      // honeypot: only bots fill it
     const people = partySize(pkg, d.people);
-    const proof = decodeProof(d.proof);
+    const proof = card ? null : decodeProof(d.proof);
     // Rate limits: a handful per sender per day, and a cap on how much can wait for review at once.
     const ip = clientIp(req);
     if (ip) {
       const [{ n: fromIp }] = await q(
         `SELECT COUNT(*)::int AS n FROM purchases WHERE coach_id = $1 AND submit_ip = $2 AND submitted_at > NOW() - INTERVAL '1 day'`,
         [coach.id, ip]);
-      if (fromIp >= 5) return fail(429, "Too many payments from this device today. Contact your coach directly.");
+      if (fromIp >= (card ? 10 : 5)) return fail(429, "Too many payments from this device today. Contact your coach directly.");
     }
-    const [{ n: waitingNow }] = await q(
-      `SELECT COUNT(*)::int AS n FROM purchases WHERE coach_id = $1 AND status = 'pending' AND method IN ('zelle', 'cashapp')`, [coach.id]);
-    if (waitingNow >= 60) return fail(429, "Payments are backed up right now. Contact your coach directly.");
+    if (!card) {
+      const [{ n: waitingNow }] = await q(
+        `SELECT COUNT(*)::int AS n FROM purchases WHERE coach_id = $1 AND status = 'pending' AND method IN ('zelle', 'cashapp')`, [coach.id]);
+      if (waitingNow >= 60) return fail(429, "Payments are backed up right now. Contact your coach directly.");
+    }
 
     // Signed-in clients buy on their own account; everyone else is matched or created by email.
     const sessionClientId = await sessionUser(req, "client");
@@ -247,27 +276,72 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
       }
     }
     if (!validPhone(client.phone) && validPhone(phone)) await q(`UPDATE clients SET phone = $2 WHERE id = $1`, [client.id, phone]);
+    if (pkg.first_time_only) {
+      const [{ n: before }] = await q(
+        `SELECT COUNT(*)::int AS n FROM purchases WHERE client_id = $1 AND (status IN ('paid', 'refunded')
+           OR (status = 'pending' AND package_id = $2 AND method IN ('zelle', 'cashapp')))`, [client.id, pkg.id]);
+      if (before) return fail(400, `The ${pkg.name} is for new clients only. Pick another package.`);
+    }
     const [{ n }] = await q(
       `SELECT COUNT(*)::int AS n FROM purchases WHERE client_id = $1 AND status = 'pending' AND submitted_at > NOW() - INTERVAL '1 day'`,
       [client.id]);
-    if (n >= 5) return fail(429, "You have several payments waiting for review already. Your coach will get to them soon.");
+    if (n >= (card ? 10 : 5)) return fail(429, "You have several payments waiting already. Contact your coach directly.");
 
+    const total = packageTotal(pkg, people);
     const purchase = await tx(async (t) => {
       const [p] = await t(
         `INSERT INTO purchases (coach_id, client_id, package_id, package_name, lessons_total, amount_cents, method, status,
-           package_kind, party_size, submitted_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, NOW()) RETURNING *`,
-        [coach.id, client.id, pkg.id, pkg.name, pkg.lesson_count, packageTotal(pkg, people), method, pkg.kind, people]);
-      if (ip) await t(`UPDATE purchases SET submit_ip = $2 WHERE id = $1`, [p.id, ip]);
-      await t(`INSERT INTO payment_proofs (purchase_id, mime, data) VALUES ($1, $2, $3)`, [p.id, proof.mime, proof.data]);
+           package_kind, party_size, submitted_at, submit_ip)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, NOW(), $10) RETURNING *`,
+        [coach.id, client.id, pkg.id, pkg.name, pkg.lesson_count, total, method, pkg.kind, people, ip || ""]);
+      if (proof) await t(`INSERT INTO payment_proofs (purchase_id, mime, data) VALUES ($1, $2, $3)`, [p.id, proof.mime, proof.data]);
       return p;
     });
+
+    if (card) {
+      // Straight to Stripe Checkout. The price is charged as listed: no sales tax is added.
+      const base = `${origin(req)}/${coach.slug}`;
+      try {
+        const s = await payments().createCheckout({
+          purchaseId: purchase.id, coachId: coach.id, amountCents: total,
+          name: `${pkg.name} with ${coach.name}`,
+          description: `${pkg.lesson_count} lesson${pkg.lesson_count > 1 ? "s" : ""}`
+            + (pkg.kind === "group" ? ` · group of ${people} at $${(pkg.price_cents / 100).toFixed(2)} per person` : ""),
+          email: client.email,
+          successUrl: `${base}?paid={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${base}?canceled=1`,
+        });
+        await q(`UPDATE purchases SET stripe_session_id = $2 WHERE id = $1`, [purchase.id, s.id]);
+        return json({ url: s.url, purchaseId: purchase.id }, 201);
+      } catch (e: any) {
+        await q(`UPDATE purchases SET status = 'canceled' WHERE id = $1`, [purchase.id]);
+        console.error("checkout failed", e);
+        return fail(502, "Couldn't start card checkout. Try again in a minute, or pay with Zelle or Cash App.");
+      }
+    }
+
     // A brand-new account is signed in on this device right away. Existing accounts sign in as usual.
     const token = created || signedIn ? (signedIn ? null : await createSession("client", client.id)) : null;
     return json({
       purchaseId: purchase.id, amountCents: purchase.amount_cents, email: client.email,
       accountCreated: created, token, needsPassword: !client.password_hash,
     }, 201);
+  }
+
+  if (m === "POST" && a === "card-return") {
+    // Back from Stripe Checkout. The Checkout Session id in the return URL is only known to the buyer.
+    const d = await body(req);
+    const sid = str(d.session, 255);
+    const [p] = sid ? await q(
+      `SELECT p.*, c.email, c.password_hash FROM purchases p JOIN clients c ON c.id = p.client_id
+       WHERE p.stripe_session_id = $1 AND p.coach_id = $2`, [sid, coach.id]) : [];
+    if (!p) return fail(404, "We couldn't find that payment.");
+    const paid = await confirmAndNotify(p.id);
+    // Accounts without a password yet are signed in on this device, same as a Zelle / Cash App purchase.
+    const signedInAs = await sessionUser(req, "client");
+    const token = paid && !p.password_hash && signedInAs !== p.client_id ? await createSession("client", p.client_id) : null;
+    return json({ paid, amountCents: p.amount_cents, email: p.email, packageName: p.package_name,
+      accountCreated: !p.password_hash, token, needsPassword: !p.password_hash });
   }
 
   if (m === "POST" && a === "inquiries") {
@@ -395,7 +469,7 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
   if (m === "POST" && a === "purchases" && c === "confirm") {
     const [p] = await q(`SELECT id FROM purchases WHERE id = $1 AND client_id = $2`, [int(b), client.id]);
     if (!p) return fail(404, "Purchase not found.");
-    return json({ paid: await confirmPurchase(p.id) });
+    return json({ paid: await confirmAndNotify(p.id) });
   }
 
   if (m === "POST" && a === "lessons" && !b) {
@@ -532,11 +606,11 @@ async function applyFirstCoachSetup(coachId: number) {
 }
 
 async function insertStarterPackages(t: Q, coachId: number) {
-  for (const [name, desc, count, price, kind, minP, maxP, sort] of STARTER_PACKAGES) {
+  for (const [name, desc, count, price, kind, minP, maxP, sort, firstTime] of STARTER_PACKAGES) {
     await t(
-      `INSERT INTO packages (coach_id, name, description, lesson_count, price_cents, expires_days, sort_order, kind, min_people, max_people)
-       VALUES ($1, $2, $3, $4, $5, 0, $6, $7, $8, $9)`,
-      [coachId, name, desc, count, price, sort, kind, minP, maxP]);
+      `INSERT INTO packages (coach_id, name, description, lesson_count, price_cents, expires_days, sort_order, kind, min_people, max_people, first_time_only)
+       VALUES ($1, $2, $3, $4, $5, 0, $6, $7, $8, $9, $10)`,
+      [coachId, name, desc, count, price, sort, kind, minP, maxP, Boolean(firstTime)]);
   }
 }
 
@@ -675,18 +749,18 @@ async function coachRoutes(req: Request, parts: string[]): Promise<Response> {
       const token = d.offer ? randomBytes(9).toString("base64url") : null;
       const [p] = await q(
         `INSERT INTO packages (coach_id, name, description, lesson_count, price_cents, expires_days, sort_order,
-           kind, min_people, max_people, offer_token, offer_for)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-        [coach.id, name, str(d.description, 1000), lessons, price, days, int(d.sortOrder) || 0, kind, minP, maxP, token, offerFor]);
+           kind, min_people, max_people, offer_token, offer_for, first_time_only)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+        [coach.id, name, str(d.description, 1000), lessons, price, days, int(d.sortOrder) || 0, kind, minP, maxP, token, offerFor, d.firstTimeOnly === true]);
       return json({ package: pkgOut(p, true) }, 201);
     }
     // Editing changes the package for future buyers only; past purchases keep their own copy of the terms.
     const [p] = await q(
       `UPDATE packages SET name = $3, description = $4, lesson_count = $5, price_cents = $6, expires_days = $7,
-         active = $8, sort_order = $9, kind = $10, min_people = $11, max_people = $12, offer_for = $13
+         active = $8, sort_order = $9, kind = $10, min_people = $11, max_people = $12, offer_for = $13, first_time_only = $14
        WHERE id = $1 AND coach_id = $2 RETURNING *`,
       [int(b), coach.id, name, str(d.description, 1000), lessons, price, days, d.active !== false, int(d.sortOrder) || 0,
-       kind, minP, maxP, offerFor]);
+       kind, minP, maxP, offerFor, d.firstTimeOnly === true]);
     if (!p) return fail(404, "Package not found.");
     return json({ package: pkgOut(p, true) });
   }
@@ -763,7 +837,7 @@ async function coachRoutes(req: Request, parts: string[]): Promise<Response> {
       await t(`UPDATE purchases SET status = 'refunded', refunded_cents = refunded_cents + $2 WHERE id = $1`, [p.id, Math.max(0, amount)]);
       return { p, amount };
     });
-    if (r.p.method === "card" && r.amount > 0) {
+    if ((r.p.method === "card" || r.p.method === "stripe") && r.amount > 0) {
       try {
         await payments().refund({ paymentIntent: r.p.stripe_payment_intent, amountCents: r.amount, key: `refund-${r.p.id}` });
       } catch (e: any) {
@@ -772,7 +846,7 @@ async function coachRoutes(req: Request, parts: string[]): Promise<Response> {
         return fail(502, `Stripe refused the refund: ${e?.message ?? e}`);
       }
     }
-    return json({ refundedCents: r.p.method === "card" ? r.amount : 0 });
+    return json({ refundedCents: r.p.method === "card" || r.p.method === "stripe" ? r.amount : 0 });
   }
 
   if (m === "POST" && a === "purchases" && c === "keep-balance") {
@@ -899,7 +973,7 @@ async function stripeWebhook(req: Request): Promise<Response> {
     case "checkout.session.completed":
     case "checkout.session.async_payment_succeeded": {
       const id = int(obj.metadata?.purchase_id);
-      if (id) await confirmPurchase(id);
+      if (id) await confirmAndNotify(id);
       break;
     }
     case "checkout.session.expired":

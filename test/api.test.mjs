@@ -161,7 +161,7 @@ test("groups, private offers, quote requests, starter packages", async () => {
   assert.equal((await call("POST", "/api/coach/starter-packages", {}, coach)).status, 409);
   const pub = ok(await call("GET", "/api/c/sam"));
   assert.deepEqual(pub.packages.map((p) => [p.name, p.priceCents / p.lessonCount]),
-    [["12-Lesson Pack", 10000], ["8-Lesson Pack", 11000], ["Single Lesson", 12500], ["Small Group Lesson", 5000]]);
+    [["12-Lesson Pack", 10000], ["8-Lesson Pack", 11000], ["Single Lesson", 12500], ["Intro Lesson", 6000], ["Small Group Lesson", 5000]]);
   const group = pub.packages.find((p) => p.kind === "group");
 
   // Group of 4 pays $200; group of 2 is refused.
@@ -225,7 +225,7 @@ test("pay by Zelle or Cash App without an account, coach approves", async () => 
   ok(await call("PUT", "/api/coach/availability", { windows: [0, 1, 2, 3, 4, 5, 6].map((d) => ({ weekday: d, startMin: 0, endMin: 1440 })) }, coach));
   ok(await call("POST", "/api/coach/starter-packages", {}, coach), 201);
   const pub = ok(await call("GET", "/api/c/sam"));
-  assert.deepEqual(pub.coach.payment, { zelle: "pay@sam.example", cashapp: "$SamCoaching", note: "" });
+  assert.deepEqual(pub.coach.payment, { zelle: "pay@sam.example", cashapp: "$SamCoaching", note: "", card: true });
   const eight = pub.packages.find((p) => p.lessonCount === 8);
   const group = pub.packages.find((p) => p.kind === "group");
   const proof = "data:image/jpeg;base64," + Buffer.alloc(2000, 7).toString("base64");
@@ -303,7 +303,7 @@ test("first coach gets the site setup; lesson locations; spam limits", async () 
   assert.equal(pub.coach.payment.cashapp, "$ConnorSimmons2022");
   assert.equal(pub.coach.contactEmail, "SimmonsMMA26@gmail.com");
   assert.doesNotMatch(pub.coach.bio + pub.coach.credentials, /amateur/i);
-  assert.deepEqual(pub.packages.map((p) => p.name), ["12-Lesson Pack", "8-Lesson Pack", "Single Lesson", "Small Group Lesson"]);
+  assert.deepEqual(pub.packages.map((p) => p.name), ["12-Lesson Pack", "8-Lesson Pack", "Single Lesson", "Intro Lesson", "Small Group Lesson"]);
   const dash = ok(await call("GET", "/api/coach/dashboard", null, coach));
   assert.equal(dash.availability.length, 6);
 
@@ -346,4 +346,45 @@ test("phone number is required to sign up, buy and request a quote", async () =>
   assert.match((await call("POST", "/api/c/spc/manual-purchase", { packageId: pkg.id, method: "zelle", name: "A", email: "a@example.com", proof, phone: "123" })).body.error, /phone/);
   assert.match((await call("POST", "/api/c/spc/inquiries", { name: "A", email: "a@example.com" })).body.error, /phone/);
   ok(await call("POST", "/api/c/spc/manual-purchase", { packageId: pkg.id, method: "zelle", name: "A", email: "a@example.com", proof, phone: "(469) 555-0100" }), 201);
+});
+
+test("pay by card through Stripe: no screenshot, paid on return, coach sees it; intro is new clients only", async () => {
+  await q(`TRUNCATE coaches, clients, sessions, packages, purchases, availability, time_off, lessons, releases, inquiries, payment_proofs RESTART IDENTITY CASCADE`);
+  const coach = ok(await call("POST", "/api/coach/signup", { name: "Simmons Performance Coaching", email: "connor@example.com", slug: "simmons", password: "longpassword1" }), 201).token;
+  const pub = ok(await call("GET", "/api/c/simmons"));
+  assert.equal(pub.coach.payment.card, true);
+  const intro = pub.packages.find((p) => p.name === "Intro Lesson");
+  assert.equal(intro.priceCents, 6000); assert.equal(intro.firstTimeOnly, true);
+  const group = pub.packages.find((p) => p.kind === "group");
+
+  // Card checkout needs no screenshot and returns a Stripe URL with the session id filled in.
+  const c = ok(await call("POST", "/api/c/simmons/card-purchase", { packageId: intro.id, name: "Lee", email: "lee@example.com", phone: "4695550111" }), 201);
+  const sid = new URL(c.url).searchParams.get("paid");
+  assert.match(sid, /^cs_/);
+  let dash = ok(await call("GET", "/api/coach/dashboard", null, coach));
+  assert.equal(dash.reviews.length, 0);                                     // never in "Payments to approve"
+  assert.equal(dash.purchases.length, 0);                                   // not paid yet
+
+  // Back from Stripe: paid, signed in, lessons ready; the coach sees it right away.
+  const back = ok(await call("POST", "/api/c/simmons/card-return", { session: sid }));
+  assert.equal(back.paid, true); assert.ok(back.token); assert.equal(back.amountCents, 6000);
+  const me = ok(await call("GET", "/api/c/simmons/me", null, back.token));
+  assert.equal(me.creditsRemaining, 1);
+  dash = ok(await call("GET", "/api/coach/dashboard", null, coach));
+  assert.equal(dash.purchases.length, 1);
+  assert.equal(dash.purchases[0].method, "stripe"); assert.equal(dash.purchases[0].status, "paid"); assert.equal(dash.purchases[0].heldCents, 0);
+  // Returning twice is harmless.
+  assert.equal(ok(await call("POST", "/api/c/simmons/card-return", { session: sid })).paid, true);
+  assert.equal((await call("POST", "/api/c/simmons/card-return", { session: "cs_nope" })).status, 404);
+
+  // The intro lesson can't be bought twice; groups charge per person.
+  assert.match((await call("POST", "/api/c/simmons/card-purchase", { packageId: intro.id, name: "Lee", email: "lee@example.com", phone: "4695550111" })).body.error, /new clients only/);
+  const g = ok(await call("POST", "/api/c/simmons/card-purchase", { packageId: group.id, people: 4, name: "Lee", email: "lee@example.com", phone: "4695550111" }), 201);
+  const [row] = await q(`SELECT amount_cents, method FROM purchases WHERE id = $1`, [g.purchaseId]);
+  assert.equal(row.amount_cents, 20000); assert.equal(row.method, "stripe");
+
+  // A webhook confirms it too, even if the buyer never comes back to the site.
+  ok(await call("POST", "/api/stripe/webhook", { type: "checkout.session.completed", data: { object: { metadata: { purchase_id: String(g.purchaseId) } } } }));
+  const [after] = await q(`SELECT status FROM purchases WHERE id = $1`, [g.purchaseId]);
+  assert.equal(after.status, "paid");
 });

@@ -9,7 +9,7 @@ Built for one coach first, with multiple coaches supported from day one: each co
 Live at **https://simmonsperformancecoaching.netlify.app** (Netlify project `simmonsperformancecoaching`, deploys on every push to `main`).
 
 1. **Deploy on Netlify** from this repo. The build command (`node scripts/stamp-site-url.mjs`) fills in the site address for link previews, search info and the sitemap. Netlify Database is set up and every migration runs on deploy.
-2. **Create your coach account first** at `/admin`, using page address `simmons`. The very first account is filled in automatically from `src/defaults.ts`: name, headline, bio, credentials, Dallas location and training spots, contact email and phone, Zelle and Cash App, 12-hour cancel window, weekly hours (Mon–Fri 3–8 PM, Sat 9 AM–2 PM) and the four packages. Change anything in Settings.
+2. **Create your coach account first** at `/admin`, using page address `simmons`. The very first account is filled in automatically from `src/defaults.ts`: name, headline, bio, credentials, Dallas location and training spots, contact email and phone, Zelle and Cash App, 12-hour cancel window, weekly hours (Mon–Fri 3–8 PM, Sat 9 AM–2 PM) and the packages (12-pack, 8-pack, single, $60 intro lesson for new clients, small groups). Change anything in Settings.
 3. **Turn on email**, the same setup as the Fortis MMA site (Netlify Forms):
    - In Netlify, open **Forms** and enable form detection, then redeploy once so the forms are picked up.
    - Under **Forms → Form notifications → Add notification → Email**, send to `SimmonsMMA26@gmail.com`. Add one for each form (or "Any form"):
@@ -18,6 +18,11 @@ Live at **https://simmonsperformancecoaching.netlify.app** (Netlify project `sim
      - `quote-request`: corporate training quote requests
      - `lesson-booked`: a client booked a lesson (time, place and any in-home address)
 4. **Domain:** add your domain under Domain management and redeploy, so link previews use it.
+5. **Card payments (Stripe):** card checkout shows on the page once Netlify has your Stripe key. Clients pay on Stripe's checkout, are sent back to the site, and their lessons unlock right away. No screenshot and nothing to approve. The payment shows in the dashboard under Money and Clients as "card (Stripe)", and you get the `payment-submitted` email marked "already paid". Prices are charged exactly as listed, with no sales tax added. The page says "Sales tax not included".
+   - In Stripe: **Developers → API keys → Create restricted key** with **Checkout Sessions: Write** and **Payment Intents: Write** (Write is needed for refunds from the dashboard). Leave everything else as None.
+   - In Netlify: **Site configuration → Environment variables**, add `STRIPE_SECRET_KEY` = that key (`rk_live_...`), then redeploy.
+   - Recommended, so a payment still counts if the client closes the tab before coming back: in Stripe, go to **Developers → Webhooks → Add endpoint** `https://simmonsperformancecoaching.netlify.app/api/stripe/webhook` with events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`. Then add its signing secret in Netlify as `STRIPE_WEBHOOK_SECRET` (`whsec_...`).
+   - Card money goes straight to your own Stripe balance and pays out on your normal Stripe schedule. Stripe Connect and holding funds aren't used for this.
 
 ### Pages
 - `/<slug>`: the coach page. `/<slug>/privacy` and `/<slug>/terms`: privacy policy and terms (drafts written from how the site works; review them).

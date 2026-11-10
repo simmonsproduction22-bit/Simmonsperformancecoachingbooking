@@ -582,7 +582,7 @@ async function coachPage(slug, sub = "") {
   // Remember an offer link across sign-up and the Stripe round trip; forget it once it's gone.
   store.set("offer:" + slug, pub.offer ? offerToken : null);
   const allPkgs = [...pub.packages, ...(pub.offer ? [pub.offer] : [])];
-  const payMethods = [coach.payment.zelle && ["zelle", "Zelle", coach.payment.zelle], coach.payment.cashapp && ["cashapp", "Cash App", coach.payment.cashapp]].filter(Boolean);
+  const payMethods = [coach.payment.card && ["card", "Card", ""], coach.payment.zelle && ["zelle", "Zelle", coach.payment.zelle], coach.payment.cashapp && ["cashapp", "Cash App", coach.payment.cashapp]].filter(Boolean);
   const canPay = payMethods.length > 0;
   const groupLabel = (n) => `Group of ${n}`;
 
@@ -595,11 +595,18 @@ async function coachPage(slug, sub = "") {
   // Back from Stripe Checkout.
   const params = new URLSearchParams(location.search);
   let notice = "", justPaid = false;
-  if (params.get("paid") && token) {
+  let cardReturn = null;
+  if (params.get("paid")) {
+    const paidId = params.get("paid");
     try {
-      const r = await api("POST", `/c/${slug}/purchases/${encodeURIComponent(params.get("paid"))}/confirm`, {}, token);
-      justPaid = r.paid;
-      notice = r.paid ? `<div class="banner ok">Payment received. Your lessons are ready to book.</div>`
+      if (/^cs_/.test(paidId)) {
+        cardReturn = await api("POST", `/c/${slug}/card-return`, { session: paidId }, token);
+        if (cardReturn.token) { token = cardReturn.token; store.set(tokenKey, token); }
+        justPaid = cardReturn.paid;
+      } else if (token) {
+        justPaid = (await api("POST", `/c/${slug}/purchases/${encodeURIComponent(paidId)}/confirm`, {}, token)).paid;
+      }
+      notice = justPaid ? `<div class="banner ok">Payment received. Your lessons are ready to book.</div>`
         : `<div class="banner">We haven't seen the payment go through yet. Refresh in a minute.</div>`;
     } catch {}
     history.replaceState(null, "", location.pathname);
@@ -611,13 +618,15 @@ async function coachPage(slug, sub = "") {
   await loadMe();
   if (sub === "privacy" || sub === "terms") return legalPage(sub);
   draw();
-  if (justPaid && me?.creditsRemaining) bookSheet();
+  if (cardReturn?.paid && cardReturn.needsPassword) doneSheet(cardReturn, true);
+  else if (justPaid && me?.creditsRemaining) bookSheet();
 
   function pkgCard(p, opts = {}) {
     const per = p.kind === "group" ? null : Math.round(p.priceCents / p.lessonCount);
     return `<div class="card pkg ${opts.best ? "best" : ""}" ${opts.offer ? 'style="border-color:rgba(220,192,143,.5)"' : ""}>
       ${opts.best ? `<span class="pill accent tag">Best value</span>` : ""}
       ${opts.offer ? `<span class="pill pink" style="align-self:flex-start">Custom offer for you</span>` : ""}
+      ${p.firstTimeOnly ? `<span class="pill accent" style="align-self:flex-start">New clients</span>` : ""}
       <h3 style="margin:0">${esc(p.name)}</h3>
       ${p.kind === "group"
         ? `<div class="price">${money(p.priceCents)} <small>per person</small></div>
@@ -658,7 +667,8 @@ async function coachPage(slug, sub = "") {
     const perLesson = (p) => p.priceCents / p.lessonCount;
     const multi = privatePkgs.filter((p) => p.lessonCount > 1);
     const best = multi.length ? multi.reduce((a, b) => (perLesson(b) < perLesson(a) ? b : a)) : null;
-    const fromPrice = privatePkgs.length ? Math.min(...privatePkgs.map(perLesson)) : null;
+    const regular = privatePkgs.filter((p) => !p.firstTimeOnly);     // the intro price doesn't count as "from"
+    const fromPrice = regular.length ? Math.min(...regular.map(perLesson)) : null;
     const group = groupPkgs[0];
     const lede = `Private lessons, small groups and premium corporate training${coach.location ? ` in ${esc(coach.location)}` : ""}. Buy a package, book online and reschedule anytime.`;
 
@@ -764,7 +774,7 @@ async function coachPage(slug, sub = "") {
           <div class="eyebrow">Private lessons</div>
           <div class="row spread" style="align-items:flex-end;margin-bottom:14px">
             <h2 style="margin:0">Packages</h2>
-            <p class="muted small" style="margin:0">${canPay ? `Pay with ${payMethods.map((m) => m[1]).join(" or ")}. No account needed.` : "Online payment isn't set up yet"}</p>
+            <p class="muted small" style="margin:0">${canPay ? `Pay with ${payMethods.map((m) => m[0] === "card" ? "card" : m[1]).join(", ").replace(/, ([^,]+)$/, " or $1")}. No account needed.` : "Online payment isn't set up yet"}</p>
           </div>
           ${privatePkgs.length ? `<div class="grid pk">${privatePkgs.map((p) => pkgCard(p, { best: best && p.id === best.id })).join("")}</div>` : `<p class="muted">Packages coming soon.</p>`}
           <p class="pk-note">Group packages are available too. Contact ${esc(coach.name)} directly for details${coach.contactPhone || coach.contactEmail ? ": " : "."}${coach.contactPhone ? `call or text <a href="tel:+1${esc(coach.contactPhone.replace(/\D/g, "").slice(-10))}">${esc(coach.contactPhone)}</a>` : ""}${coach.contactPhone && coach.contactEmail ? " or email " : ""}${coach.contactEmail ? `<a href="mailto:${esc(coach.contactEmail)}">${esc(coach.contactEmail)}</a>` : ""}${coach.contactPhone || coach.contactEmail ? "." : ""}</p>
@@ -923,13 +933,17 @@ async function coachPage(slug, sub = "") {
     catch { const r = document.createRange(); const el = btn.previousElementSibling; r.selectNodeContents(el); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("Selected. Copy it from here."); }
   }
 
-  /** Pay by Zelle or Cash App: details to send to, the buyer's name and email, and a screenshot. */
+  /** Pay by card (Stripe Checkout, confirmed automatically) or by Zelle / Cash App with a screenshot the coach approves. */
   function paySheet(pkg, people) {
     if (!canPay) return toast("Online payment isn't set up yet. Contact " + coach.name + ".");
     const total = pkg.kind === "group" ? pkg.priceCents * people : pkg.priceCents;
     let method = payMethods[0][0], proof = null;
     const detail = () => {
       const [key, label, handle] = payMethods.find((m) => m[0] === method);
+      if (key === "card") return `<div class="pay-box">
+        <div class="muted small">Pay <strong style="color:var(--text)">${money(total)}</strong> by card, Apple Pay or Google Pay on Stripe's secure checkout.</div>
+        <div class="muted small" style="margin-top:8px">Confirmed instantly, no screenshot needed. Sales tax not included.</div>
+      </div>`;
       const digits = handle.replace(/\D/g, "");
       const isPhone = key === "zelle" && /^\+?1?\d{10}$/.test(handle.replace(/[\s().-]/g, ""));
       const ten = digits.slice(-10);
@@ -945,7 +959,7 @@ async function coachPage(slug, sub = "") {
     };
     sheet("Pay for your lessons", `<form>
       <div class="pay-sum"><div><strong>${esc(pkg.name)}</strong><div class="muted small">${pkg.lessonCount} lesson${pkg.lessonCount > 1 ? "s" : ""}${pkg.kind === "group" ? ` · group of ${people}` : ""}</div></div><div class="price" style="font-size:30px">${money(total)}</div></div>
-      <div class="pay-step"><span>1</span>Send the payment</div>
+      <div class="pay-step"><span>1</span>How you'll pay</div>
       ${payMethods.length > 1 ? `<div class="row" style="gap:8px;margin-bottom:10px">${payMethods.map((m, i) => `<button type="button" class="slot ${i === 0 ? "on" : ""}" data-method="${m[0]}">${m[1]}</button>`).join("")}</div>` : ""}
       <div data-detail>${detail()}</div>
       <div class="pay-step"><span>2</span>Your details</div>
@@ -957,16 +971,27 @@ async function coachPage(slug, sub = "") {
       </div>
       <div class="field"><label for="p-phone">Phone</label><input id="p-phone" name="phone" type="tel" autocomplete="tel" required></div>
       <p class="muted small" style="margin:-4px 0 12px">Your account is set up from your email. No password needed to buy.</p>`}
+      <div data-proof-step>
       <div class="pay-step"><span>3</span>Upload your payment screenshot</div>
-      <label class="drop" for="p-proof"><input id="p-proof" type="file" accept="image/*" required style="position:absolute;opacity:0;width:1px;height:1px">
+      <label class="drop" for="p-proof"><input id="p-proof" type="file" accept="image/*" style="position:absolute;opacity:0;width:1px;height:1px">
         <span data-drop>Tap to choose a screenshot</span></label>
+      </div>
       <input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
-      <button class="primary block" type="submit" style="margin-top:14px">Submit for approval</button>
-      <p class="muted small" style="text-align:center;margin:8px 0 0">Your lessons unlock as soon as ${esc(coach.name)} confirms the payment.</p>
+      <button class="primary block" type="submit" style="margin-top:14px" data-submit></button>
+      <p class="muted small" style="text-align:center;margin:8px 0 0" data-after></p>
       <p class="err"></p></form>`, (body, close) => {
+      const sync = () => {
+        const card = method === "card";
+        $("[data-detail]", body).innerHTML = detail();
+        $("[data-proof-step]", body).hidden = card;
+        $("[data-submit]", body).textContent = card ? `Continue to secure checkout · ${money(total)}` : "Submit for approval";
+        $("[data-after]", body).textContent = card ? "Your lessons unlock as soon as the payment goes through."
+          : `Your lessons unlock as soon as ${coach.name} confirms the payment.`;
+      };
+      sync();
       body.addEventListener("click", (e) => {
         const m = e.target.closest("[data-method]");
-        if (m) { method = m.dataset.method; body.querySelectorAll("[data-method]").forEach((x) => x.classList.toggle("on", x === m)); $("[data-detail]", body).innerHTML = detail(); }
+        if (m) { method = m.dataset.method; body.querySelectorAll("[data-method]").forEach((x) => x.classList.toggle("on", x === m)); sync(); }
         const c = e.target.closest("[data-copy]"); if (c) copyText(c.dataset.copy, c);
       });
       $("#p-proof", body).addEventListener("change", async (e) => {
@@ -976,6 +1001,11 @@ async function coachPage(slug, sub = "") {
         catch { proof = null; $("[data-drop]", body).textContent = "That file isn't an image we can read. Try a screenshot."; }
       });
       handleForm($("form", body), async (f) => {
+        if (method === "card") {
+          const r = await api("POST", `/c/${slug}/card-purchase`, { ...f, packageId: pkg.id, people, offer: pkg.isOffer ? offerToken : undefined }, token);
+          location.href = r.url;
+          await new Promise(() => {});       // keep the button busy while the browser leaves for Stripe
+        }
         if (!proof) throw new Error("Add a screenshot of your payment.");
         const r = await api("POST", `/c/${slug}/manual-purchase`, { ...f, packageId: pkg.id, people, method, proof, offer: pkg.isOffer ? offerToken : undefined }, token);
         notify("payment-submitted", { name: me?.client.name || f.name, email: r.email, phone: me?.client.phone || f.phone, package: pkg.name + (pkg.kind === "group" ? ` (group of ${people})` : ""),
@@ -987,13 +1017,14 @@ async function coachPage(slug, sub = "") {
     });
   }
 
-  function doneSheet(r) {
-    sheet("Payment submitted", `
-      <p>Thanks! ${esc(coach.name)} will confirm your ${money(r.amountCents)} payment and your lessons will unlock right after.</p>
+  function doneSheet(r, card = false) {
+    sheet(card ? "Payment received" : "Payment submitted", `
+      <p>${card ? `Thanks! Your ${money(r.amountCents)} payment went through and your lessons are ready to book.`
+        : `Thanks! ${esc(coach.name)} will confirm your ${money(r.amountCents)} payment and your lessons will unlock right after.`}</p>
       ${r.accountCreated ? `<div class="pay-box"><strong>Your account is ready</strong>
         <p class="muted small" style="margin:4px 0 10px">Set up for ${esc(r.email)}. You're signed in on this device. Add a password to sign in from anywhere (optional).</p>
         <form class="row" style="gap:8px;flex-wrap:nowrap"><input name="password" type="password" minlength="8" placeholder="Password (8+ characters)" autocomplete="new-password" aria-label="Password"><button class="primary sm" type="submit">Save</button></form><p class="err"></p></div>`
-      : !me ? `<p class="muted">This purchase is saved to your account for ${esc(r.email)}. Sign in to book once it's approved.</p>` : ""}
+      : !me ? `<p class="muted">This purchase is saved to your account for ${esc(r.email)}. Sign in to book${card ? "" : " once it's approved"}.</p>` : ""}
       <button class="block" data-close style="margin-top:14px">Done</button>`, (body, close) => {
       const f = $("form", body);
       if (f) handleForm(f, async (d) => { await api("POST", `/c/${slug}/password`, d, token); await loadMe(); draw(); toast("Password saved"); close(); });
@@ -1024,7 +1055,7 @@ async function coachPage(slug, sub = "") {
         <li><strong>Messages:</strong> what you send through the contact or corporate quote forms.</li>
         <li><strong>Technical data:</strong> your IP address with payment submissions, used only to block spam.</li></ul>
       <h2>How we use it</h2><p>To confirm payments, schedule and run your lessons, and reply to you. We don't sell your information, share it with advertisers, or use it for ads.</p>
-      <h2>Payments</h2><p>You pay directly by Zelle or Cash App. We never see your bank or card details; we only see the screenshot you upload and the payment in our own account.</p>
+      <h2>Payments</h2><p>You pay by card through Stripe's secure checkout, or directly by Zelle or Cash App. We never see your full card or bank details: card payments are handled by Stripe, and for Zelle or Cash App we only see the screenshot you upload and the payment in our own account.</p>
       <h2>Where it's stored</h2><p>The site and its data are hosted by Netlify. Messages sent through the contact forms are delivered by email. Sign-in uses a token saved on your device; we don't use advertising cookies or trackers.</p>
       <h2>Your choices</h2><p>You can ask to see, correct or delete your information at any time: ${contact}. We keep booking and payment records only as long as we need them for our business records.</p>
       <h2>Children</h2><p>Lessons for anyone under 18 are booked by a parent or guardian, who provides the contact details.</p>
@@ -1032,7 +1063,7 @@ async function coachPage(slug, sub = "") {
     const terms = `
       <h1>Terms</h1><p class="muted">Last updated ${updated}</p>
       <h2>Lessons and packages</h2><p>Lessons are sold one at a time or in packages. Packages don't expire. Group lessons are priced per person for groups of 3 or more; group packages and corporate training are arranged directly.</p>
-      <h2>Payment</h2><p>Pay by Zelle or Cash App and upload a screenshot. Your lessons unlock once the payment is confirmed. If a payment can't be confirmed, the purchase is declined and you'll see why.</p>
+      <h2>Payment</h2><p>Pay by card through Stripe and your lessons unlock as soon as the payment goes through. Prices don't include sales tax. Or pay by Zelle or Cash App and upload a screenshot; those lessons unlock once the payment is confirmed. If a payment can't be confirmed, the purchase is declined and you'll see why.</p>
       <h2>Booking, rescheduling and cancelling</h2><p>Book online at least ${coach.minNoticeHours} hour${coach.minNoticeHours === 1 ? "" : "s"} ahead. You can reschedule or cancel online up to ${coach.cancelWindowHours} hours before a lesson and it goes back on your balance. Inside ${coach.cancelWindowHours} hours, or if you don't show up, the lesson counts as used.</p>
       <h2>Refunds</h2><p>Lessons already taken aren't refundable. For unused lessons, ${contact} and we'll work it out with you.</p>
       ${venues.length ? `<h2>Where lessons happen</h2><p>${venues.map(esc).join(", ")}. At a gym, follow that gym's rules. In-home training is arranged by message; provide a safe, clear space and an accurate address.</p>` : ""}
@@ -1437,7 +1468,7 @@ async function coachApp() {
         <button class="sm" data-offline>Add package paid in person</button>
       </div>
       <h3>Packages</h3>
-      <div class="list" style="margin-bottom:14px">${ps.length ? ps.map((p) => `<div class="item"><div class="grow">${esc(p.packageName)}<div class="muted small">${p.lessonsUsed}/${p.lessonsTotal} used · ${money(p.amountCents)} ${({ offline: "paid in person", zelle: "by Zelle", cashapp: "by Cash App", card: "by card" })[p.method] || ""}${p.expiresAt ? " · use by " + fmtDate(p.expiresAt, tz()) : ""}</div></div>${p.status === "refunded" ? `<span class="pill">Refunded</span>` : ""}</div>`).join("") : `<div class="empty">None yet.</div>`}</div>
+      <div class="list" style="margin-bottom:14px">${ps.length ? ps.map((p) => `<div class="item"><div class="grow">${esc(p.packageName)}<div class="muted small">${p.lessonsUsed}/${p.lessonsTotal} used · ${money(p.amountCents)} ${({ offline: "paid in person", zelle: "by Zelle", cashapp: "by Cash App", card: "by card", stripe: "by card (Stripe)" })[p.method] || ""}${p.expiresAt ? " · use by " + fmtDate(p.expiresAt, tz()) : ""}</div></div>${p.status === "refunded" ? `<span class="pill">Refunded</span>` : ""}</div>`).join("") : `<div class="empty">None yet.</div>`}</div>
       <h3>Lessons</h3>
       <div class="list" style="margin-bottom:14px">${ls.length ? ls.map((l) => `<div class="item"><div class="grow">${fmtWhen(l.startsAt, tz())}</div>${statusPill(l.status)}</div>`).join("") : `<div class="empty">None yet.</div>`}</div>
       <form data-notes><div class="field"><label for="cn">Private notes</label><textarea id="cn" name="notes">${esc(c.notes)}</textarea></div>
@@ -1667,6 +1698,7 @@ async function coachApp() {
       </div>
       <div class="field"><label for="pk-desc">Description</label><textarea id="pk-desc" name="description" maxlength="1000">${esc(p?.description || "")}</textarea></div>
       ${p ? `<div class="field"><label><input type="checkbox" name="active" ${p.active ? "checked" : ""} style="width:auto"> Show on my page</label></div>` : ""}
+      ${isOffer ? "" : `<div class="field"><label><input type="checkbox" name="firstTimeOnly" ${p?.firstTimeOnly ? "checked" : ""} style="width:auto"> New clients only (like an intro lesson)</label></div>`}
       <p class="muted small">Changes apply to new purchases only. Packages already bought keep their original terms.</p>
       <button class="primary block" type="submit">${p ? "Save" : isOffer ? "Create offer" : "Create package"}</button><p class="err"></p></form>`, (body, close) => {
       $("#pk-kind").onchange = (e) => {
@@ -1677,7 +1709,7 @@ async function coachApp() {
       handleForm($("form", body), async (f) => {
         const payload = { name: f.name, description: f.description, lessonCount: +f.lessonCount, priceCents: Math.round(parseFloat(f.price) * 100),
           expiresDays: p?.expiresDays || 0, active: p ? f.active === "on" : true, sortOrder: p?.sortOrder || 0,
-          kind: f.kind, minPeople: +f.minPeople, maxPeople: +f.maxPeople, offer: isOffer, offerFor: f.offerFor };
+          kind: f.kind, minPeople: +f.minPeople, maxPeople: +f.maxPeople, offer: isOffer, offerFor: f.offerFor, firstTimeOnly: f.firstTimeOnly === "on" };
         const r = await api(p ? "PUT" : "POST", p ? `/coach/packages/${p.id}` : "/coach/packages", payload, token);
         if (preset.inquiry) await api("PUT", `/coach/inquiries/${preset.inquiry.id}`, { status: "replied" }, token);
         close(); await refresh();
