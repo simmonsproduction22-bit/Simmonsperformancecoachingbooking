@@ -32,13 +32,16 @@ function stripePayments(secretKey: string): Payments {
   return {
     fake: false,
     async createCheckout(i) {
-      const s = await stripe.checkout.sessions.create({
+      // Sales tax is added on top of the listed price by Stripe Tax, wherever the account is registered to collect it.
+      // If Stripe Tax isn't set up on the account yet, checkout still works without tax rather than failing.
+      const make = (tax: boolean) => stripe.checkout.sessions.create({
         mode: "payment",
         customer_email: i.email,
+        ...(tax ? { automatic_tax: { enabled: true }, billing_address_collection: "required" as const } : {}),
         line_items: [{
           quantity: 1,
           price_data: {
-            currency: "usd", unit_amount: i.amountCents,
+            currency: "usd", unit_amount: i.amountCents, ...(tax ? { tax_behavior: "exclusive" as const } : {}),
             product_data: { name: i.name, ...(i.description ? { description: i.description.slice(0, 500) } : {}) },
           },
         }],
@@ -49,7 +52,14 @@ function stripePayments(secretKey: string): Payments {
         metadata: { purchase_id: String(i.purchaseId), coach_id: String(i.coachId) },
         success_url: i.successUrl,
         cancel_url: i.cancelUrl,
-      }, { idempotencyKey: `checkout-${i.purchaseId}` });
+      }, { idempotencyKey: `checkout-${i.purchaseId}${tax ? "-tax" : ""}` });
+      let s;
+      try { s = await make(true); }
+      catch (e: any) {
+        if (!/tax/i.test(String(e?.message))) throw e;
+        console.error("Stripe Tax isn't ready, charging without tax:", e?.message);
+        s = await make(false);
+      }
       return { id: s.id, url: s.url! };
     },
     async getCheckout(id) {

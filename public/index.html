@@ -942,7 +942,7 @@ async function coachPage(slug, sub = "") {
       const [key, label, handle] = payMethods.find((m) => m[0] === method);
       if (key === "card") return `<div class="pay-box">
         <div class="muted small">Pay <strong style="color:var(--text)">${money(total)}</strong> by card, Apple Pay or Google Pay on Stripe's secure checkout.</div>
-        <div class="muted small" style="margin-top:8px">Confirmed instantly, no screenshot needed. Sales tax not included.</div>
+        <div class="muted small" style="margin-top:8px">Confirmed instantly, no screenshot needed. Sales tax is added at checkout.</div>
       </div>`;
       const digits = handle.replace(/\D/g, "");
       const isPhone = key === "zelle" && /^\+?1?\d{10}$/.test(handle.replace(/[\s().-]/g, ""));
@@ -1063,7 +1063,7 @@ async function coachPage(slug, sub = "") {
     const terms = `
       <h1>Terms</h1><p class="muted">Last updated ${updated}</p>
       <h2>Lessons and packages</h2><p>Lessons are sold one at a time or in packages. Packages don't expire. Group lessons are priced per person for groups of 3 or more; group packages and corporate training are arranged directly.</p>
-      <h2>Payment</h2><p>Pay by card through Stripe and your lessons unlock as soon as the payment goes through. Prices don't include sales tax. Or pay by Zelle or Cash App and upload a screenshot; those lessons unlock once the payment is confirmed. If a payment can't be confirmed, the purchase is declined and you'll see why.</p>
+      <h2>Payment</h2><p>Pay by card through Stripe and your lessons unlock as soon as the payment goes through. Sales tax is added at checkout where it applies. Or pay by Zelle or Cash App and upload a screenshot; those lessons unlock once the payment is confirmed. If a payment can't be confirmed, the purchase is declined and you'll see why.</p>
       <h2>Booking, rescheduling and cancelling</h2><p>Book online at least ${coach.minNoticeHours} hour${coach.minNoticeHours === 1 ? "" : "s"} ahead. You can reschedule or cancel online up to ${coach.cancelWindowHours} hours before a lesson and it goes back on your balance. Inside ${coach.cancelWindowHours} hours, or if you don't show up, the lesson counts as used.</p>
       <h2>Refunds</h2><p>Lessons already taken aren't refundable. For unused lessons, ${contact} and we'll work it out with you.</p>
       ${venues.length ? `<h2>Where lessons happen</h2><p>${venues.map(esc).join(", ")}. At a gym, follow that gym's rules. In-home training is arranged by message; provide a safe, clear space and an accurate address.</p>` : ""}
