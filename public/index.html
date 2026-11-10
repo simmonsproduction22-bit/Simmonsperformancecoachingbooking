@@ -184,6 +184,10 @@ details > summary::-webkit-details-marker { display: none; }
 .policies div { padding: 14px 16px; border-radius: var(--radius); background: var(--bg-2); border: 1px solid var(--border); font-size: 14px; color: #d9d9d9; }
 .policies b { display: block; font: 800 22px/1 var(--display); color: var(--text); margin-bottom: 6px; text-transform: uppercase; }
 
+.creds { list-style: none; padding: 0; margin: 0 0 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.creds li { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text); }
+.creds li::before { content: ""; width: 6px; height: 6px; transform: rotate(45deg); background: var(--gold-grad); }
+.foot-contact { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; user-select: text; }
 /* Pay by Zelle / Cash App */
 .pay-sum { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--border-2); border-radius: 14px; background: var(--surface); margin-bottom: 16px; }
 .pay-step { display: flex; align-items: center; gap: 10px; font-weight: 800; margin: 18px 0 10px; }
@@ -694,7 +698,7 @@ async function coachPage(slug) {
         ${groupPkgs.length ? `
         <section class="section" id="groups">
           <div class="band">
-            ${photo("Two fighters trading strikes in the cage", "55% 40%", PHOTOS.groups).replace('class="ph has-img"', 'class="ph has-img graded"')}
+            ${photo("Connor Simmons competing in MMA", "55% 40%", PHOTOS.groups).replace('class="ph has-img"', 'class="ph has-img graded"')}
             <div class="band-body">
               <div class="eyebrow">Small groups</div>
               <h2>Bring your crew</h2>
@@ -724,10 +728,11 @@ async function coachPage(slug) {
         ${coach.bio ? `
         <section class="section" id="about">
           <div class="band">
-            ${photo(`Portrait of ${coach.name}`, "45% 30%")}
+            ${photo("Connor Simmons, coach at Simmons Performance Coaching", "45% 30%")}
             <div class="band-body">
               <div class="eyebrow">About</div>
               <h2>${esc(coach.name)}</h2>
+              ${coach.credentials ? `<ul class="creds">${coach.credentials.split(/\s*·\s*|\n/).filter(Boolean).map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}
               <p style="white-space:pre-line;color:#d9d9d9;margin:0">${esc(coach.bio)}</p>
             </div>
           </div>
@@ -743,7 +748,11 @@ async function coachPage(slug) {
       </main>
       <footer><div class="wrap row spread">
         <span class="brand" style="font-size:16px">${logoMark()}${esc(coach.name)}</span>
-        <span>© ${new Date().getFullYear()} · <a href="/admin">Coach sign in</a></span>
+        <span class="foot-contact">
+          ${coach.contactEmail ? `<a href="mailto:${esc(coach.contactEmail)}">${esc(coach.contactEmail)}</a>` : ""}
+          ${coach.contactPhone ? `<span>Call or text <a href="tel:+1${esc(coach.contactPhone.replace(/\D/g, "").slice(-10))}">${esc(coach.contactPhone)}</a></span>` : ""}
+          <span>© ${new Date().getFullYear()} · <a href="/admin">Coach sign in</a></span>
+        </span>
       </div></footer>`;
   }
 
@@ -799,10 +808,15 @@ async function coachPage(slug) {
     let method = payMethods[0][0], proof = null;
     const detail = () => {
       const [key, label, handle] = payMethods.find((m) => m[0] === method);
+      const digits = handle.replace(/\D/g, "");
+      const isPhone = key === "zelle" && /^\+?1?\d{10}$/.test(handle.replace(/[\s().-]/g, ""));
+      const ten = digits.slice(-10);
+      const shown = isPhone ? `(${ten.slice(0, 3)}) ${ten.slice(3, 6)}-${ten.slice(6)}` : handle;
+      const copy = isPhone ? ten : handle;
       const amt = (total / 100).toFixed(total % 100 ? 2 : 0);
       return `<div class="pay-box">
         <div class="muted small">Send <strong style="color:var(--text)">${money(total)}</strong> with ${label} to</div>
-        <div class="row" style="gap:8px;margin-top:6px"><span class="pay-handle">${esc(handle)}</span><button type="button" class="sm" data-copy="${esc(handle)}">Copy</button></div>
+        <div class="row" style="gap:8px;margin-top:6px"><span class="pay-handle">${esc(shown)}</span><button type="button" class="sm" data-copy="${esc(copy)}" aria-label="Copy ${esc(copy)}">Copy</button></div>
         ${key === "cashapp" ? `<a class="btn sm" style="margin-top:10px" href="https://cash.app/${encodeURIComponent(handle)}/${amt}" target="_blank" rel="noopener">Open Cash App</a>` : ""}
         <div class="muted small" style="margin-top:10px">Put your name in the note.${coach.payment.note ? " " + esc(coach.payment.note) : ""}</div>
       </div>`;
@@ -1441,7 +1455,7 @@ async function coachApp() {
     sheet(p ? "Edit package" : isOffer ? "New private offer" : "New package", `<form>
       ${isOffer ? `<p class="muted small">A private offer doesn't show on your page. You send the link to the client, and only they can buy it.</p>` : ""}
       ${preset.inquiry ? `<div class="banner info small">${esc(preset.inquiry.name)}${preset.inquiry.company ? ", " + esc(preset.inquiry.company) : ""}${preset.inquiry.groupSize ? " · about " + esc(preset.inquiry.groupSize) + " people" : ""}</div>` : ""}
-      <div class="field"><label for="pk-name">Name</label><input id="pk-name" name="name" required value="${esc(p?.name || preset.name || "")}" placeholder="5-Lesson Pack"></div>
+      <div class="field"><label for="pk-name">Name</label><input id="pk-name" name="name" required value="${esc(p?.name || preset.name || "")}" placeholder="8-Lesson Pack"></div>
       ${isOffer ? `<div class="field"><label for="pk-for">Who it's for (only you see this)</label><input id="pk-for" name="offerFor" value="${esc(p?.offerFor || preset.offerFor || "")}" placeholder="Acme Corp"></div>` : ""}
       <div class="field"><label for="pk-kind">Type</label><select id="pk-kind" name="kind">
         <option value="private" ${kind === "private" ? "selected" : ""}>Private lessons: one price for the package</option>
@@ -1540,8 +1554,16 @@ async function coachApp() {
           <div class="field"><label for="s-slug">Page address</label><input id="s-slug" name="slug" value="${esc(c.slug)}" pattern="(?:[a-z0-9]|-){3,40}" required></div>
         </div>
         <div class="field"><label for="s-head">Headline (shown big on your page; 2–5 words works best)</label><input id="s-head" name="headline" value="${esc(c.headline)}" placeholder="The best hour of your day" maxlength="60"></div>
-        <div class="field"><label for="s-loc">Location</label><input id="s-loc" name="location" value="${esc(c.location)}" placeholder="Austin, TX" maxlength="140"></div>
+        <div class="field"><label for="s-loc">Location</label><input id="s-loc" name="location" value="${esc(c.location)}" placeholder="Dallas, TX" maxlength="140"></div>
         <div class="field"><label for="s-bio">About you</label><textarea id="s-bio" name="bio" maxlength="4000">${esc(c.bio)}</textarea></div>
+      </div>
+      <div class="card">
+        <h2>Contact and credentials</h2>
+        <div class="fields">
+          <div class="field"><label for="s-cemail">Contact email (shown in the footer)</label><input id="s-cemail" name="contactEmail" type="email" value="${esc(c.contactEmail || "")}" maxlength="254"></div>
+          <div class="field"><label for="s-cphone">Call/text number (shown as typed)</label><input id="s-cphone" name="contactPhone" value="${esc(c.contactPhone || "")}" placeholder="(469) 307 6899" maxlength="40"></div>
+        </div>
+        <div class="field"><label for="s-creds">Credentials (separate with ·)</label><input id="s-creds" name="credentials" value="${esc(c.credentials || "")}" placeholder="200+ grappling matches · Coach at Fortis MMA" maxlength="300"></div>
       </div>
       <div class="card">
         <h2>Getting paid</h2>

@@ -269,6 +269,13 @@ test("pay by Zelle or Cash App without an account, coach approves", async () => 
   const [rel] = await q(`SELECT status, amount_cents FROM releases`);
   assert.deepEqual(rel, { status: "not_held", amount_cents: 11000 });
 
+  // Contact details and credentials are saved and shown exactly as typed.
+  ok(await call("PUT", "/api/coach/profile", { contactEmail: "SimmonsMMA26@gmail.com", contactPhone: "(469) 307 6899", credentials: "200+ grappling matches · Coach at Fortis MMA", zelleHandle: "4693076899" }, coach));
+  const pc = ok(await call("GET", "/api/c/sam")).coach;
+  assert.equal(pc.contactEmail, "SimmonsMMA26@gmail.com"); assert.equal(pc.contactPhone, "(469) 307 6899");
+  assert.equal(pc.credentials, "200+ grappling matches · Coach at Fortis MMA"); assert.equal(pc.payment.zelle, "4693076899");
+  assert.equal((await call("PUT", "/api/coach/profile", { contactEmail: "not-an-email" }, coach)).status, 400);
+
   // A bad $cashtag is refused.
   assert.equal((await call("PUT", "/api/coach/profile", { cashappTag: "$not valid!" }, coach)).status, 400);
 });
