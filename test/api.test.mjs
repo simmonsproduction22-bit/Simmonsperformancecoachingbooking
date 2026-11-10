@@ -275,6 +275,9 @@ test("pay by Zelle or Cash App without an account, coach approves", async () => 
   assert.equal(pc.contactEmail, "SimmonsMMA26@gmail.com"); assert.equal(pc.contactPhone, "(469) 307 6899");
   assert.equal(pc.credentials, "200+ grappling matches · Coach at Fortis MMA"); assert.equal(pc.payment.zelle, "4693076899");
   assert.equal((await call("PUT", "/api/coach/profile", { contactEmail: "not-an-email" }, coach)).status, 400);
+  ok(await call("PUT", "/api/coach/profile", { location: "Dallas, TX", venues: "Fortis MMA · Iron MMA · In-home training" }, coach));
+  const pv = ok(await call("GET", "/api/c/sam")).coach;
+  assert.equal(pv.location, "Dallas, TX"); assert.equal(pv.venues, "Fortis MMA · Iron MMA · In-home training");
 
   // A bad $cashtag is refused.
   assert.equal((await call("PUT", "/api/coach/profile", { cashappTag: "$not valid!" }, coach)).status, 400);

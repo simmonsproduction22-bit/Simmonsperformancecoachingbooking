@@ -739,8 +739,10 @@ async function coachPage(slug) {
         </section>` : ""}
 
         <section class="section">
-          <div class="eyebrow">Policies</div>
+          <div class="eyebrow">${coach.location || coach.venues ? "Where and policies" : "Policies"}</div>
           <div class="policies" style="margin-top:8px">
+            ${coach.location || coach.venues ? `<div id="where"><b>${esc(coach.location || "Where we train")}</b>${coach.venues
+              ? `<ul class="creds" style="margin:6px 0 0">${coach.venues.split(/\s*·\s*|\n/).filter(Boolean).map((v) => `<li>${esc(v)}</li>`).join("")}</ul>` : ""}</div>` : ""}
             <div><b>${coach.cancelWindowHours} hours</b>Reschedule or cancel online up to ${coach.cancelWindowHours} hours before a lesson and it goes back on your balance.</div>
             <div><b>${coach.maxDaysAhead} days out</b>Book at least ${coach.minNoticeHours} hour${coach.minNoticeHours === 1 ? "" : "s"} ahead and up to ${coach.maxDaysAhead} days out.</div>
           </div>
@@ -1554,6 +1556,7 @@ async function coachApp() {
           <div class="field"><label for="s-slug">Page address</label><input id="s-slug" name="slug" value="${esc(c.slug)}" pattern="(?:[a-z0-9]|-){3,40}" required></div>
         </div>
         <div class="field"><label for="s-head">Headline (shown big on your page; 2–5 words works best)</label><input id="s-head" name="headline" value="${esc(c.headline)}" placeholder="The best hour of your day" maxlength="60"></div>
+        <div class="field"><label for="s-venues">Where you train (separate with ·)</label><input id="s-venues" name="venues" value="${esc(c.venues || "")}" placeholder="Fortis MMA · Iron MMA · In-home training" maxlength="300"></div>
         <div class="field"><label for="s-loc">Location</label><input id="s-loc" name="location" value="${esc(c.location)}" placeholder="Dallas, TX" maxlength="140"></div>
         <div class="field"><label for="s-bio">About you</label><textarea id="s-bio" name="bio" maxlength="4000">${esc(c.bio)}</textarea></div>
       </div>

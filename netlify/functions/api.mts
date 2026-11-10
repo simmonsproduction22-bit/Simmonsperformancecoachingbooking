@@ -39,7 +39,7 @@ function publicCoach(c: any) {
     lessonMinutes: c.lesson_minutes, cancelWindowHours: c.cancel_window_hours,
     minNoticeHours: c.min_notice_hours, maxDaysAhead: c.max_days_ahead,
     payment: { zelle: c.zelle_handle || "", cashapp: c.cashapp_tag || "", note: c.payment_note || "" },
-    contactEmail: c.contact_email || "", contactPhone: c.contact_phone || "", credentials: c.credentials || "",
+    contactEmail: c.contact_email || "", contactPhone: c.contact_phone || "", credentials: c.credentials || "", venues: c.venues || "",
   };
 }
 function pkgOut(p: any, forCoach = false) {
@@ -541,6 +541,7 @@ async function coachRoutes(req: Request, parts: string[]): Promise<Response> {
        n(d.minNoticeHours, coach.min_notice_hours, 0, 168),
        n(d.maxDaysAhead, coach.max_days_ahead, 1, 365),
        n(d.cancelWindowHours, coach.cancel_window_hours, 0, 168)]);
+    if (d.venues !== undefined) await q(`UPDATE coaches SET venues = $2 WHERE id = $1`, [coach.id, str(d.venues, 300)]);
     if (d.contactEmail !== undefined || d.contactPhone !== undefined || d.credentials !== undefined) {
       const ce = d.contactEmail === undefined ? coach.contact_email : str(d.contactEmail, 254);   // keep the capitalization as typed
       if (ce && !validEmail(normEmail(ce))) return fail(400, "Enter a valid contact email, or leave it blank.");
