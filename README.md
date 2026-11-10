@@ -6,6 +6,8 @@ Built for one coach first, with multiple coaches supported from day one: each co
 
 ## Launch checklist (Simmons Performance Coaching)
 
+Live at **https://simmonsperformancecoaching.netlify.app** (Netlify project `simmonsperformancecoaching`, deploys on every push to `main`).
+
 1. **Deploy on Netlify** from this repo. The build command (`node scripts/stamp-site-url.mjs`) fills in the site address for link previews, search info and the sitemap. Netlify Database is set up and every migration runs on deploy.
 2. **Create your coach account first** at `/admin`, using page address `simmons`. The very first account is filled in automatically from `src/defaults.ts`: name, headline, bio, credentials, Dallas location and training spots, contact email and phone, Zelle and Cash App, 12-hour cancel window, weekly hours (Mon–Fri 3–8 PM, Sat 9 AM–2 PM) and the four packages. Change anything in Settings.
 3. **Turn on email**, the same setup as the Fortis MMA site (Netlify Forms):
