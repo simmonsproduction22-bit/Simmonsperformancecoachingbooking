@@ -184,6 +184,19 @@ details > summary::-webkit-details-marker { display: none; }
 .policies div { padding: 14px 16px; border-radius: var(--radius); background: var(--bg-2); border: 1px solid var(--border); font-size: 14px; color: #d9d9d9; }
 .policies b { display: block; font: 800 22px/1 var(--display); color: var(--text); margin-bottom: 6px; text-transform: uppercase; }
 
+/* Pay by Zelle / Cash App */
+.pay-sum { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--border-2); border-radius: 14px; background: var(--surface); margin-bottom: 16px; }
+.pay-step { display: flex; align-items: center; gap: 10px; font-weight: 800; margin: 18px 0 10px; }
+.pay-step span { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; background: var(--gold-grad); color: var(--accent-ink); }
+.pay-box { padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(176,130,59,.45); background: rgba(176,130,59,.07); }
+.pay-handle { font: 800 22px/1.1 var(--display); letter-spacing: .02em; word-break: break-all; user-select: all; }
+.drop { position: relative; display: grid; place-items: center; gap: 8px; min-height: 120px; padding: 14px; border: 1.5px dashed var(--border-2); border-radius: 14px; background: var(--bg-2); cursor: pointer; text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--muted); text-align: center; }
+.drop:hover, .drop:focus-within { border-color: var(--accent); }
+.drop img { max-height: 220px; max-width: 100%; border-radius: 10px; display: block; margin: 0 auto 6px; }
+.review { display: grid; grid-template-columns: 88px 1fr; gap: 14px; align-items: start; }
+.review .thumb { width: 88px; height: 120px; border-radius: 10px; border: 1px solid var(--border-2); background: var(--bg-2); display: grid; place-items: center; overflow: hidden; cursor: pointer; padding: 0; min-height: 0; }
+.review .thumb img { width: 100%; height: 100%; object-fit: cover; }
+.proof-full { width: 100%; max-height: 70vh; object-fit: contain; border-radius: 12px; background: var(--bg-2); }
 /* Booking pickers and sheets */
 .days { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
 .day { flex: 0 0 auto; width: 66px; text-align: center; padding: 10px 4px; border-radius: 14px; border: 1px solid var(--border-2); background: var(--surface); cursor: pointer; display: block; min-height: 0; }
@@ -498,6 +511,8 @@ async function coachPage(slug) {
   // Remember an offer link across sign-up and the Stripe round trip; forget it once it's gone.
   store.set("offer:" + slug, pub.offer ? offerToken : null);
   const allPkgs = [...pub.packages, ...(pub.offer ? [pub.offer] : [])];
+  const payMethods = [coach.payment.zelle && ["zelle", "Zelle", coach.payment.zelle], coach.payment.cashapp && ["cashapp", "Cash App", coach.payment.cashapp]].filter(Boolean);
+  const canPay = payMethods.length > 0;
   const groupLabel = (n) => `Group of ${n}`;
 
   async function loadMe() {
@@ -539,7 +554,7 @@ async function coachPage(slug) {
            <div class="per">${p.lessonCount} lesson${p.lessonCount > 1 ? "s" : ""}${p.lessonCount > 1 ? ` · <b>${money(per)}</b> each` : ""}</div>`}
       <p class="desc" style="white-space:pre-line;margin:6px 0 0">${esc(p.description)}</p>
       <p class="muted small" style="margin:0">Use within ${p.expiresDays} days</p>
-      <button class="${opts.best || opts.offer ? "primary" : ""} block" style="margin-top:8px" data-act="buy" data-id="${p.id}" ${pub.paymentsReady ? "" : "disabled"}>${p.kind === "group" ? "Choose group size" : "Buy package"}</button>
+      <button class="${opts.best || opts.offer ? "primary" : ""} block" style="margin-top:8px" data-act="buy" data-id="${p.id}" ${canPay ? "" : "disabled"}>${p.kind === "group" ? "Choose group size" : "Buy package"}</button>
     </div>`;
   }
 
@@ -632,6 +647,11 @@ async function coachPage(slug) {
                     <strong style="font:800 22px var(--display)">${c.remaining}</strong> ${c.kind === "group" ? `group lesson${c.remaining === 1 ? "" : "s"} (${c.partySize} people)` : `lesson${c.remaining === 1 ? "" : "s"}`} left
                     <span class="muted small">· ${esc(c.packageName)}${c.expiresAt ? ` · use by ${fmtDate(c.expiresAt, tz)}` : ""}</span></p>`).join("")
                   : `<p class="muted" style="margin:0">No lessons left to book.</p>`}
+                ${me.purchases.filter((p) => p.status === "pending").map((p) => `<p class="small" style="margin:8px 0 0"><span class="pill warn">Waiting for approval</span>
+                  ${esc(p.packageName)}${p.kind === "group" ? ` (${p.partySize} people)` : ""} · ${money(p.amountCents)} by ${p.method === "cashapp" ? "Cash App" : "Zelle"}</p>`).join("")}
+                ${me.purchases.filter((p) => p.status === "rejected").slice(0, 2).map((p) => `<p class="small" style="margin:8px 0 0"><span class="pill danger">Not confirmed</span>
+                  ${esc(p.packageName)} · ${money(p.amountCents)}${p.reviewNote ? ` · ${esc(p.reviewNote)}` : ""}. Contact ${esc(coach.name)}.</p>`).join("")}
+                ${!me.client.hasPassword ? `<p class="small muted" style="margin:10px 0 0">Signed in on this device only. <a href="#" data-act="set-password">Set a password</a> to sign in anywhere.</p>` : ""}
               </div>
               ${me.creditsRemaining ? `<button class="primary" data-act="book">Book a lesson</button>` : `<button class="primary" data-act="go" data-to="packages">Buy lessons</button>`}
             </div>
@@ -666,7 +686,7 @@ async function coachPage(slug) {
           <div class="eyebrow">Private lessons</div>
           <div class="row spread" style="align-items:flex-end;margin-bottom:14px">
             <h2 style="margin:0">Packages</h2>
-            <p class="muted small" style="margin:0">${pub.paymentsReady ? "Secure card payment through Stripe" : "Online payment isn't turned on yet"}</p>
+            <p class="muted small" style="margin:0">${canPay ? `Pay with ${payMethods.map((m) => m[1]).join(" or ")}. No account needed.` : "Online payment isn't set up yet"}</p>
           </div>
           ${privatePkgs.length ? `<div class="grid pk">${privatePkgs.map((p) => pkgCard(p, { best: best && p.id === best.id })).join("")}</div>` : `<p class="muted">Packages coming soon.</p>`}
         </section>
@@ -683,7 +703,7 @@ async function coachPage(slug) {
                 <div class="row spread" style="padding:16px;border:1px solid var(--border-2);border-radius:14px;background:var(--surface)">
                   <div><div class="price" style="font-size:32px">${money(p.priceCents)} <small>per person</small></div>
                   <div class="muted small">${esc(p.name)} · ${p.minPeople}+ people</div></div>
-                  <button class="primary" data-act="buy" data-id="${p.id}" ${pub.paymentsReady ? "" : "disabled"}>Choose group size</button>
+                  <button class="primary" data-act="buy" data-id="${p.id}" ${canPay ? "" : "disabled"}>Choose group size</button>
                 </div>`).join("")}</div>
             </div>
           </div>
@@ -739,10 +759,9 @@ async function coachPage(slug) {
     }
     if (act === "buy") {
       const pkg = allPkgs.find((p) => p.id == id);
-      const go = () => (pkg.kind === "group" ? groupSheet(pkg) : buy(pkg));
-      if (!me) return authSheet(go);
-      return go();
+      return pkg.kind === "group" ? groupSheet(pkg) : paySheet(pkg, 1);
     }
+    if (act === "set-password") { e.preventDefault(); return passwordSheet(); }
     if (act === "quote") return quoteSheet();
     if (act === "go") { document.getElementById(b.dataset.to)?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
     if (act === "book") return bookSheet();
@@ -755,11 +774,99 @@ async function coachPage(slug) {
     }
   };
 
-  async function buy(pkg, people) {
+  /** Shrinks a photo in the browser so uploads stay small (max 1600px, JPEG). */
+  async function shrinkImage(file) {
+    const url = URL.createObjectURL(file);
     try {
-      const r = await api("POST", `/c/${slug}/checkout`, { packageId: pkg.id, people, offer: pkg.isOffer ? offerToken : undefined }, token);
-      location.href = r.url;
-    } catch (x) { toast(x.message); }
+      const img = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = url; });
+      const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.naturalWidth * scale); c.height = Math.round(img.naturalHeight * scale);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      return c.toDataURL("image/jpeg", 0.82);
+    } finally { URL.revokeObjectURL(url); }
+  }
+
+  async function copyText(text, btn) {
+    try { await navigator.clipboard.writeText(text); toast("Copied"); }
+    catch { const r = document.createRange(); const el = btn.previousElementSibling; r.selectNodeContents(el); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("Selected. Copy it from here."); }
+  }
+
+  /** Pay by Zelle or Cash App: details to send to, the buyer's name and email, and a screenshot. */
+  function paySheet(pkg, people) {
+    if (!canPay) return toast("Online payment isn't set up yet. Contact " + coach.name + ".");
+    const total = pkg.kind === "group" ? pkg.priceCents * people : pkg.priceCents;
+    let method = payMethods[0][0], proof = null;
+    const detail = () => {
+      const [key, label, handle] = payMethods.find((m) => m[0] === method);
+      const amt = (total / 100).toFixed(total % 100 ? 2 : 0);
+      return `<div class="pay-box">
+        <div class="muted small">Send <strong style="color:var(--text)">${money(total)}</strong> with ${label} to</div>
+        <div class="row" style="gap:8px;margin-top:6px"><span class="pay-handle">${esc(handle)}</span><button type="button" class="sm" data-copy="${esc(handle)}">Copy</button></div>
+        ${key === "cashapp" ? `<a class="btn sm" style="margin-top:10px" href="https://cash.app/${encodeURIComponent(handle)}/${amt}" target="_blank" rel="noopener">Open Cash App</a>` : ""}
+        <div class="muted small" style="margin-top:10px">Put your name in the note.${coach.payment.note ? " " + esc(coach.payment.note) : ""}</div>
+      </div>`;
+    };
+    sheet("Pay for your lessons", `<form>
+      <div class="pay-sum"><div><strong>${esc(pkg.name)}</strong><div class="muted small">${pkg.lessonCount} lesson${pkg.lessonCount > 1 ? "s" : ""}${pkg.kind === "group" ? ` · group of ${people}` : ""}</div></div><div class="price" style="font-size:30px">${money(total)}</div></div>
+      <div class="pay-step"><span>1</span>Send the payment</div>
+      ${payMethods.length > 1 ? `<div class="row" style="gap:8px;margin-bottom:10px">${payMethods.map((m, i) => `<button type="button" class="slot ${i === 0 ? "on" : ""}" data-method="${m[0]}">${m[1]}</button>`).join("")}</div>` : ""}
+      <div data-detail>${detail()}</div>
+      <div class="pay-step"><span>2</span>Your details</div>
+      ${me ? `<p class="muted small" style="margin:0 0 12px">Buying as <strong style="color:var(--text)">${esc(me.client.name)}</strong> (${esc(me.client.email)})</p>` : `
+      <div class="fields">
+        <div class="field"><label for="p-name">Name</label><input id="p-name" name="name" required autocomplete="name"></div>
+        <div class="field"><label for="p-email">Email</label><input id="p-email" name="email" type="email" required autocomplete="email"></div>
+      </div>
+      <div class="field"><label for="p-phone">Phone (optional)</label><input id="p-phone" name="phone" type="tel" autocomplete="tel"></div>
+      <p class="muted small" style="margin:-4px 0 12px">Your account is set up from your email. No password needed to buy.</p>`}
+      <div class="pay-step"><span>3</span>Upload your payment screenshot</div>
+      <label class="drop" for="p-proof"><input id="p-proof" type="file" accept="image/*" required style="position:absolute;opacity:0;width:1px;height:1px">
+        <span data-drop>Tap to choose a screenshot</span></label>
+      <button class="primary block" type="submit" style="margin-top:14px">Submit for approval</button>
+      <p class="muted small" style="text-align:center;margin:8px 0 0">Your lessons unlock as soon as ${esc(coach.name)} confirms the payment.</p>
+      <p class="err"></p></form>`, (body, close) => {
+      body.addEventListener("click", (e) => {
+        const m = e.target.closest("[data-method]");
+        if (m) { method = m.dataset.method; body.querySelectorAll("[data-method]").forEach((x) => x.classList.toggle("on", x === m)); $("[data-detail]", body).innerHTML = detail(); }
+        const c = e.target.closest("[data-copy]"); if (c) copyText(c.dataset.copy, c);
+      });
+      $("#p-proof", body).addEventListener("change", async (e) => {
+        const f = e.target.files[0]; if (!f) return;
+        $("[data-drop]", body).textContent = "Preparing…";
+        try { proof = await shrinkImage(f); $("[data-drop]", body).innerHTML = `<img src="${proof}" alt="Your payment screenshot"><span class="muted small">Tap to change</span>`; }
+        catch { proof = null; $("[data-drop]", body).textContent = "That file isn't an image we can read. Try a screenshot."; }
+      });
+      handleForm($("form", body), async (f) => {
+        if (!proof) throw new Error("Add a screenshot of your payment.");
+        const r = await api("POST", `/c/${slug}/manual-purchase`, { ...f, packageId: pkg.id, people, method, proof, offer: pkg.isOffer ? offerToken : undefined }, token);
+        if (r.token) { token = r.token; store.set(tokenKey, token); }
+        await loadMe(); close(); draw();
+        doneSheet(r);
+      });
+    });
+  }
+
+  function doneSheet(r) {
+    sheet("Payment submitted", `
+      <p>Thanks! ${esc(coach.name)} will confirm your ${money(r.amountCents)} payment and your lessons will unlock right after.</p>
+      ${r.accountCreated ? `<div class="pay-box"><strong>Your account is ready</strong>
+        <p class="muted small" style="margin:4px 0 10px">Set up for ${esc(r.email)}. You're signed in on this device. Add a password to sign in from anywhere (optional).</p>
+        <form class="row" style="gap:8px;flex-wrap:nowrap"><input name="password" type="password" minlength="8" placeholder="Password (8+ characters)" autocomplete="new-password" aria-label="Password"><button class="primary sm" type="submit">Save</button></form><p class="err"></p></div>`
+      : !me ? `<p class="muted">This purchase is saved to your account for ${esc(r.email)}. Sign in to book once it's approved.</p>` : ""}
+      <button class="block" data-close style="margin-top:14px">Done</button>`, (body, close) => {
+      const f = $("form", body);
+      if (f) handleForm(f, async (d) => { await api("POST", `/c/${slug}/password`, d, token); await loadMe(); draw(); toast("Password saved"); close(); });
+    });
+  }
+
+  function passwordSheet() {
+    sheet("Set a password", `<form>
+      <p class="muted">For ${esc(me.client.email)}. Use it to sign in on any device.</p>
+      <div class="field"><label for="sp-pw">Password</label><input id="sp-pw" name="password" type="password" minlength="8" required autocomplete="new-password"></div>
+      <button class="primary block" type="submit">Save password</button><p class="err"></p></form>`, (body, close) => {
+      handleForm($("form", body), async (d) => { await api("POST", `/c/${slug}/password`, d, token); await loadMe(); close(); draw(); toast("Password saved"); });
+    });
   }
 
   function groupSheet(pkg) {
@@ -770,15 +877,15 @@ async function coachPage(slug) {
       <label>How many people?</label>
       <div class="slots" style="margin-top:4px">${opts.map((n) => `<button class="slot" data-n="${n}">${n}</button>`).join("")}</div>
       <button class="primary block" data-go disabled style="margin-top:16px">Pick a group size</button>`,
-      (body) => {
+      (body, close) => {
         const go = $("[data-go]", body); let people = 0;
         body.addEventListener("click", (e) => {
           const b = e.target.closest("[data-n]"); if (!b) return;
           people = +b.dataset.n;
           body.querySelectorAll("[data-n]").forEach((x) => x.classList.toggle("on", x === b));
-          go.disabled = false; go.textContent = `Pay ${money(pkg.priceCents * people)} for ${people} people`;
+          go.disabled = false; go.textContent = `Continue: ${money(pkg.priceCents * people)} for ${people} people`;
         });
-        go.onclick = () => { go.disabled = true; buy(pkg, people); };
+        go.onclick = () => { close(); paySheet(pkg, people); };
       });
   }
 
@@ -942,7 +1049,7 @@ async function coachApp() {
     const setupSteps = [
       [d.packages.length > 0, "Add a lesson package", "packages"],
       [d.availability.length > 0, "Set your weekly hours", "availability"],
-      [d.coach.payoutsReady || d.paymentsFake, "Connect payouts with Stripe", "money"],
+      [Boolean(d.coach.zelleHandle || d.coach.cashappTag), "Add your Zelle or Cash App", "settings"],
     ];
     const todo = setupSteps.filter((s) => !s[0]);
     app.innerHTML = `
@@ -956,11 +1063,12 @@ async function coachApp() {
           <p class="muted small" style="margin:10px 0 0">Your page: <a href="${esc(pageUrl)}" target="_blank" rel="noopener">${esc(pageUrl)}</a></p></div>` : ""}
         ${d.paymentsFake ? `<div class="banner" style="margin-top:16px">Demo mode: payments are simulated. No real money moves.</div>` : ""}
         <div class="dash">
-        <nav class="tabs" role="tablist" aria-label="Dashboard">${TABS.map(([k, l]) => `<button role="tab" class="${tab === k ? "on" : ""}" aria-selected="${tab === k}" data-tab="${k}">${l}${k === "requests" && newRequests ? ` <span class="pill warn">${newRequests}</span>` : ""}</button>`).join("")}</nav>
+        <nav class="tabs" role="tablist" aria-label="Dashboard">${TABS.map(([k, l]) => `<button role="tab" class="${tab === k ? "on" : ""}" aria-selected="${tab === k}" data-tab="${k}">${l}${k === "requests" && newRequests ? ` <span class="pill warn">${newRequests}</span>` : ""}${k === "money" && d.reviews.length ? ` <span class="pill warn">${d.reviews.length}</span>` : ""}</button>`).join("")}</nav>
         <div id="view"></div>
         </div>
       </main>`;
     const v = $("#view");
+    setTimeout(loadThumbs, 0);
     ({ schedule: viewSchedule, clients: viewClients, requests: viewRequests, money: viewMoney, packages: viewPackages, availability: viewAvailability, settings: viewSettings })[tab](v);
   }
 
@@ -985,6 +1093,9 @@ async function coachApp() {
       if (act === "pkg") return packageSheet(id ? d.packages.find((p) => p.id == id) : null);
       if (act === "pkg-offer") return packageSheet(null, { offer: true });
       if (act === "refund") return refund(d.purchases.find((p) => p.id == id));
+      if (act === "proof") return viewProof(id);
+      if (act === "approve") return approve(id);
+      if (act === "reject") return reject(id);
       if (act === "keep") return keepBalance(d.purchases.find((p) => p.id == id));
       if (act === "connect") { b.disabled = true; const r = await api("POST", "/coach/stripe/connect", {}, token); location.href = r.url; return; }
       if (act === "stripe-dash") { const r = await api("GET", "/coach/stripe/dashboard", null, token); window.open(r.url, "_blank", "noopener"); return; }
@@ -1024,6 +1135,7 @@ async function coachApp() {
     for (const l of upcoming) (groups[localDate(Date.parse(l.startsAt), tz())] ||= []).push(l);
     const recent = d.lessons.filter((l) => l.status !== "booked" && Date.parse(l.startsAt) <= now).reverse().slice(0, 15);
     v.innerHTML = `
+      ${d.reviews.length ? `<div class="banner info row spread" style="margin-bottom:18px"><span>${d.reviews.length} payment${d.reviews.length > 1 ? "s" : ""} waiting for your approval</span><a href="#" data-tab="money">Review</a></div>` : ""}
       ${toClose.length ? `<div class="section" style="margin-top:0"><h2>Close out <span class="pill warn">${toClose.length}</span></h2>
         <p class="muted small">Marking a lesson done, no-show or late cancel releases that lesson's share of the package to you.</p>
         <div class="list">${toClose.map((l) => lessonRow(l, true)).join("")}</div></div>` : ""}
@@ -1114,7 +1226,7 @@ async function coachApp() {
         <button class="sm" data-offline>Add package paid in person</button>
       </div>
       <h3>Packages</h3>
-      <div class="list" style="margin-bottom:14px">${ps.length ? ps.map((p) => `<div class="item"><div class="grow">${esc(p.packageName)}<div class="muted small">${p.lessonsUsed}/${p.lessonsTotal} used · ${money(p.amountCents)} ${p.method === "offline" ? "paid in person" : "by card"}${p.expiresAt ? " · use by " + fmtDate(p.expiresAt, tz()) : ""}</div></div>${p.status === "refunded" ? `<span class="pill">Refunded</span>` : ""}</div>`).join("") : `<div class="empty">None yet.</div>`}</div>
+      <div class="list" style="margin-bottom:14px">${ps.length ? ps.map((p) => `<div class="item"><div class="grow">${esc(p.packageName)}<div class="muted small">${p.lessonsUsed}/${p.lessonsTotal} used · ${money(p.amountCents)} ${({ offline: "paid in person", zelle: "by Zelle", cashapp: "by Cash App", card: "by card" })[p.method] || ""}${p.expiresAt ? " · use by " + fmtDate(p.expiresAt, tz()) : ""}</div></div>${p.status === "refunded" ? `<span class="pill">Refunded</span>` : ""}</div>`).join("") : `<div class="empty">None yet.</div>`}</div>
       <h3>Lessons</h3>
       <div class="list" style="margin-bottom:14px">${ls.length ? ls.map((l) => `<div class="item"><div class="grow">${fmtWhen(l.startsAt, tz())}</div>${statusPill(l.status)}</div>`).join("") : `<div class="empty">None yet.</div>`}</div>
       <form data-notes><div class="field"><label for="cn">Private notes</label><textarea id="cn" name="notes">${esc(c.notes)}</textarea></div>
@@ -1172,19 +1284,34 @@ async function coachApp() {
     const m = d.money;
     const held = d.purchases.filter((p) => p.heldCents > 0);
     const expired = held.filter((p) => p.expiresAt && Date.parse(p.expiresAt) < Date.now());
-    const stripeBlock = !d.paymentsReady ? `<p style="margin:0">Card payments aren't turned on. The site owner needs to add the Stripe keys.</p>`
-      : d.coach.payoutsReady ? `<div class="row spread"><div><span class="pill ok">Connected</span> <span class="muted small">Released money goes to your bank on Stripe's daily schedule.</span></div><button class="sm" data-act="stripe-dash">Stripe dashboard</button></div>`
-      : `<div class="row spread"><div class="grow"><strong>Connect your bank to get paid.</strong><div class="muted small">Stripe asks for your bank account and identity details. Released lessons wait here until it's connected.</div></div><button class="primary" data-act="connect">${d.coach.stripeConnected ? "Finish Stripe setup" : "Connect payouts"}</button></div>`;
+    const monthStart = Date.parse(localDate(Date.now(), tz()).slice(0, 8) + "01T00:00:00Z") - 864e5;
+    const direct = d.purchases.filter((p) => p.method !== "card" && p.status === "paid" && p.paidAt && Date.parse(p.paidAt) >= monthStart
+      && localDate(Date.parse(p.paidAt), tz()).slice(0, 7) === localDate(Date.now(), tz()).slice(0, 7));
+    const waiting = d.reviews.reduce((s, p) => s + p.amountCents, 0);
+    const stripeBlock = d.coach.stripeConnected || m.heldCents ? (d.coach.payoutsReady
+      ? `<div class="row spread"><div><span class="pill ok">Card payouts connected</span> <span class="muted small">Card payments release to your bank as lessons are done.</span></div><button class="sm" data-act="stripe-dash">Stripe dashboard</button></div>`
+      : `<div class="row spread"><div class="grow"><strong>Finish card payouts</strong><div class="muted small">Card payments wait here until Stripe has your bank details.</div></div><button class="primary" data-act="connect">Finish Stripe setup</button></div>`) : "";
     v.innerHTML = `
-      <div class="stats">
-        <div class="card stat"><div class="l">Held for future lessons</div><div class="n">${money(m.heldCents)}</div><div class="muted small">Paid by clients, not yet earned</div></div>
-        <div class="card stat"><div class="l">Paid out this month</div><div class="n">${money(m.sentMonthCents)}</div><div class="muted small">${money(m.sentTotalCents)} all time</div></div>
-        <div class="card stat"><div class="l">On its way</div><div class="n">${money(m.releasingCents)}</div><div class="muted small">${m.releasingCents ? `<a href="#" data-act="send">Send now</a>` : "Nothing waiting"}</div></div>
-        <div class="card stat"><div class="l">Paid in person this month</div><div class="n">${money(m.offlineMonthCents)}</div><div class="muted small">Cash, Zelle, Venmo</div></div>
+      <div class="section" id="reviews" style="margin-top:0"><h2>Payments to approve</h2>
+        <p class="muted small">Check each screenshot against your Zelle or Cash App activity, then approve to unlock the client's lessons.</p>
+        <div class="list">${d.reviews.length ? d.reviews.map((p) => `<div class="item review">
+          <button class="thumb" data-act="proof" data-id="${p.id}" aria-label="View screenshot from ${esc(p.clientName)}"><span class="muted small">View</span></button>
+          <div>
+            <div class="row spread" style="align-items:flex-start"><div><div class="when">${esc(p.clientName)} · ${money(p.amountCents)}</div>
+              <div class="muted small">${esc(p.packageName)}${p.kind === "group" ? ` (group of ${p.partySize})` : ""} · ${p.methodLabel} · ${esc(p.clientEmail)}${p.clientPhone ? " · " + esc(p.clientPhone) : ""}</div>
+              <div class="muted small">Sent ${fmtWhen(p.submittedAt || p.createdAt, tz())}</div></div></div>
+            <div class="row" style="margin-top:10px"><button class="sm primary" data-act="approve" data-id="${p.id}">Approve</button><button class="sm" data-act="reject" data-id="${p.id}">Reject</button><button class="sm ghost" data-act="proof" data-id="${p.id}">View screenshot</button></div>
+          </div></div>`).join("") : `<div class="empty">No payments waiting. New Zelle and Cash App payments show up here.</div>`}</div>
       </div>
-      <div class="card" style="margin-top:14px">${stripeBlock}</div>
+      <div class="stats">
+        <div class="card stat"><div class="l">Waiting for approval</div><div class="n">${money(waiting)}</div><div class="muted small">${d.reviews.length} payment${d.reviews.length === 1 ? "" : "s"}</div></div>
+        <div class="card stat"><div class="l">Received this month</div><div class="n">${money(direct.reduce((s, p) => s + p.amountCents, 0))}</div><div class="muted small">Zelle, Cash App and cash you approved or added</div></div>
+        <div class="card stat"><div class="l">Earned this month</div><div class="n">${money(m.offlineMonthCents + m.sentMonthCents)}</div><div class="muted small">Value of lessons you delivered</div></div>
+        ${m.heldCents ? `<div class="card stat"><div class="l">Held by card payments</div><div class="n">${money(m.heldCents)}</div><div class="muted small">Released as lessons are done</div></div>` : ""}
+      </div>
+      ${stripeBlock ? `<div class="card" style="margin-top:14px">${stripeBlock}</div>` : ""}
       ${expired.length ? `<div class="banner" style="margin-top:14px">${expired.length} expired package${expired.length > 1 ? "s" : ""} still ${expired.length > 1 ? "have" : "has"} money held. Refund it or keep it below.</div>` : ""}
-      <div class="section"><h2>Packages with money held</h2>
+      ${held.length ? `<div class="section"><h2>Packages with money held</h2>
         <div class="list">${held.length ? held.map((p) => {
           const expired = p.expiresAt && Date.parse(p.expiresAt) < Date.now();
           return `<div class="item">
@@ -1192,14 +1319,14 @@ async function coachApp() {
               <div class="muted small">${esc(p.packageName)} · ${p.lessonsUsed}/${p.lessonsTotal} lessons used · ${money(p.amountCents)} paid${p.expiresAt ? ` · use by ${fmtDate(p.expiresAt, tz())}` : ""}</div></div>
             ${expired ? `<span class="pill warn">Expired</span><button class="sm" data-act="keep" data-id="${p.id}">Keep</button>` : ""}
             <button class="sm danger" data-act="refund" data-id="${p.id}">Refund</button></div>`;
-        }).join("") : `<div class="empty">Nothing held right now.</div>`}</div>
-      </div>
-      <div class="section"><h2>Payout history</h2>
+        }).join("") : ""}</div>
+      </div>` : ""}
+      <div class="section"><h2>Lessons delivered</h2>
         <div class="list">${d.releases.length ? d.releases.map((r) => `<div class="item">
           <div class="grow"><div class="when">${money(r.amountCents - r.feeCents)} · ${esc(r.clientName)}</div>
             <div class="muted small">${r.kind === "forfeit" ? "Unused balance kept" : r.lessonAt ? "Lesson " + fmtDay(r.lessonAt, tz()) : "Lesson"} · ${esc(r.packageName)}${r.feeCents ? ` · ${money(r.feeCents)} fee` : ""} · ${fmtDate(r.sentAt || r.createdAt, tz())}</div>
             ${r.status === "failed" ? `<div class="small" style="color:var(--danger)">${esc(r.error)}</div>` : ""}</div>
-          ${{ sent: `<span class="pill ok">Paid out</span>`, pending: `<span class="pill warn">Waiting</span>`, failed: `<span class="pill danger">Failed</span>`, not_held: `<span class="pill">Paid in person</span>` }[r.status]}
+          ${{ sent: `<span class="pill ok">Paid out</span>`, pending: `<span class="pill warn">Waiting</span>`, failed: `<span class="pill danger">Failed</span>`, not_held: `<span class="pill">Paid directly</span>` }[r.status]}
         </div>`).join("") : `<div class="empty">Payouts show up here as you close out lessons.</div>`}</div>
       </div>
       <div class="card small muted">
@@ -1208,6 +1335,36 @@ async function coachApp() {
         <p>Each time you mark a lesson <em>Done</em>, <em>No-show</em> or <em>Late cancel</em>, that lesson's share (package price ÷ lessons) is sent to your bank.</p>
         <p style="margin:0">If a package expires with lessons unused, you choose: <em>Keep</em> the rest or <em>Refund</em> it to the client.</p>
       </div>`;
+  }
+
+  async function loadThumbs() {
+    for (const b of document.querySelectorAll(".review .thumb[data-id]")) {
+      try { const r = await api("GET", `/coach/purchases/${b.dataset.id}/proof`, null, token); b.innerHTML = `<img src="${r.dataUrl}" alt="">`; } catch {}
+    }
+  }
+  async function viewProof(id) {
+    const p = d.reviews.find((x) => x.id == id);
+    sheet(`${p.clientName} · ${money(p.amountCents)}`, `<p class="muted small">${esc(p.packageName)} · ${p.methodLabel} · ${esc(p.clientEmail)}</p>
+      <div data-img><p class="muted">Loading screenshot…</p></div>
+      <div class="row" style="margin-top:14px"><button class="primary" data-ok>Approve</button><button data-no>Reject</button></div>`, async (body, close) => {
+      $("[data-ok]", body).onclick = () => { close(); approve(p.id); };
+      $("[data-no]", body).onclick = () => { close(); reject(p.id); };
+      try { const r = await api("GET", `/coach/purchases/${p.id}/proof`, null, token); $("[data-img]", body).innerHTML = `<img class="proof-full" src="${r.dataUrl}" alt="Payment screenshot from ${esc(p.clientName)}">`; }
+      catch (x) { $("[data-img]", body).innerHTML = `<p class="err">${esc(x.message)}</p>`; }
+    });
+  }
+  async function approve(id) {
+    const p = d.reviews.find((x) => x.id == id);
+    if (!(await confirmSheet("Approve payment?", `<strong>${esc(p.clientName)}</strong> · ${money(p.amountCents)} by ${p.methodLabel}<br><br>Only approve once you see it in your ${p.methodLabel} account. Their ${esc(p.packageName)} unlocks right away.`, "Approve"))) return;
+    try { await api("POST", `/coach/purchases/${id}/approve`, {}, token); toast("Approved. Lessons unlocked"); refresh(); } catch (x) { toast(x.message); }
+  }
+  function reject(id) {
+    const p = d.reviews.find((x) => x.id == id);
+    sheet("Reject payment?", `<form><p class="muted">${esc(p.clientName)} · ${money(p.amountCents)} by ${p.methodLabel}. They'll see this on their page.</p>
+      <div class="field"><label for="rj-note">Reason (optional)</label><input id="rj-note" name="note" maxlength="300" placeholder="Couldn't find this payment"></div>
+      <button class="primary block" type="submit">Reject payment</button><p class="err"></p></form>`, (body, close) => {
+      handleForm($("form", body), async (f) => { await api("POST", `/coach/purchases/${id}/reject`, f, token); close(); toast("Payment rejected"); refresh(); });
+    });
   }
 
   async function refund(p) {
@@ -1385,6 +1542,15 @@ async function coachApp() {
         <div class="field"><label for="s-head">Headline (shown big on your page; 2–5 words works best)</label><input id="s-head" name="headline" value="${esc(c.headline)}" placeholder="The best hour of your day" maxlength="60"></div>
         <div class="field"><label for="s-loc">Location</label><input id="s-loc" name="location" value="${esc(c.location)}" placeholder="Austin, TX" maxlength="140"></div>
         <div class="field"><label for="s-bio">About you</label><textarea id="s-bio" name="bio" maxlength="4000">${esc(c.bio)}</textarea></div>
+      </div>
+      <div class="card">
+        <h2>Getting paid</h2>
+        <p class="muted small">Clients pay you directly and upload a screenshot. You approve it under Money.</p>
+        <div class="fields">
+          <div class="field"><label for="s-zelle">Zelle (email or phone)</label><input id="s-zelle" name="zelleHandle" value="${esc(c.zelleHandle || "")}" placeholder="you@email.com" maxlength="120"></div>
+          <div class="field"><label for="s-cash">Cash App $cashtag</label><input id="s-cash" name="cashappTag" value="${esc(c.cashappTag || "")}" placeholder="$YourName" maxlength="40"></div>
+        </div>
+        <div class="field"><label for="s-pnote">Extra payment instructions (optional)</label><input id="s-pnote" name="paymentNote" value="${esc(c.paymentNote || "")}" placeholder="Business account, look for the SPC logo" maxlength="400"></div>
       </div>
       <div class="card">
         <h2>Booking rules</h2>

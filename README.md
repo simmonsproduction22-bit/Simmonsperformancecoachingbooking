@@ -4,7 +4,20 @@ A booking and payments site for private coaches. Clients buy lesson packages, th
 
 Built for one coach first, with multiple coaches supported from day one: each coach gets their own page at `/<their-name>`, their own clients and their own payouts.
 
-## How the money works
+## Paying by Zelle or Cash App (default)
+
+No account is needed to buy. On any package the client:
+1. Sees the amount and your Zelle email/phone or Cash App $cashtag (with a copy button and an "Open Cash App" link).
+2. Enters their name and email (phone optional).
+3. Uploads a screenshot of the payment. It's shrunk in the browser to 1600px before upload.
+
+An account is created from their email automatically and they're signed in on that device, with an optional step to set a password. If the email already has an account, the purchase is added to it and they sign in as usual.
+
+You review each one under **Money → Payments to approve** (the Money tab shows a count). Each entry has the screenshot, amount and package, with **Approve** and **Reject** buttons. Approving unlocks the lessons right away. Rejecting shows your reason on their page. Set your Zelle and Cash App details in **Settings → Getting paid**.
+
+These payments go straight to you, so nothing is held; delivered lessons are tracked under "Lessons delivered."
+
+## How the money works (card payments, optional)
 
 ```
 Client buys "4 lessons for $240" by card

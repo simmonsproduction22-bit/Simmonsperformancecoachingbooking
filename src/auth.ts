@@ -72,6 +72,9 @@ export async function endSession(req: Request) {
 export async function verifyLogin(table: "coaches" | "clients", row: any, password: string): Promise<string | null> {
   const generic = "That email and password don't match.";
   if (!row) { await hashPassword(password); return generic; }   // same timing as a real check
+  if (!row.password_hash) {
+    return "This account doesn't have a password yet. Set one on the device you bought on, or ask your coach to set one for you.";
+  }
   if (row.locked_until && new Date(row.locked_until).getTime() > Date.now()) {
     return "Too many tries. Wait 15 minutes and try again.";
   }

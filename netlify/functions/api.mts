@@ -38,6 +38,7 @@ function publicCoach(c: any) {
     slug: c.slug, name: c.name, headline: c.headline, bio: c.bio, location: c.location, timezone: c.timezone,
     lessonMinutes: c.lesson_minutes, cancelWindowHours: c.cancel_window_hours,
     minNoticeHours: c.min_notice_hours, maxDaysAhead: c.max_days_ahead,
+    payment: { zelle: c.zelle_handle || "", cashapp: c.cashapp_tag || "", note: c.payment_note || "" },
   };
 }
 function pkgOut(p: any, forCoach = false) {
@@ -78,7 +79,20 @@ function purchaseOut(p: any) {
     kind: p.package_kind, partySize: p.party_size,
     heldCents: p.method === "card" && p.status === "paid" ? p.amount_cents - p.released_cents - p.refunded_cents : 0,
     paidAt: p.paid_at, expiresAt: p.expires_at, createdAt: p.created_at,
+    submittedAt: p.submitted_at ?? null, reviewNote: p.review_note ?? "",
   };
+}
+
+const METHOD_LABEL: Record<string, string> = { zelle: "Zelle", cashapp: "Cash App", offline: "in person", card: "card" };
+
+/** Decodes a screenshot sent as a data: URL. Throws a UserError if it isn't a reasonable image. */
+function decodeProof(v: unknown): { mime: string; data: Buffer } {
+  const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(v ?? ""));
+  if (!m) throw new UserError("Attach a screenshot of your payment.");
+  const data = Buffer.from(m[2], "base64");
+  if (data.length < 500) throw new UserError("That screenshot looks empty. Try another one.");
+  if (data.length > 4 * 1024 * 1024) throw new UserError("That screenshot is too large. Try a smaller one.");
+  return { mime: m[1], data };
 }
 
 async function coachBySlug(slug: string) {
@@ -164,6 +178,58 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
     });
   }
 
+  if (m === "POST" && a === "manual-purchase") {
+    // No account needed: name + email + screenshot. The account is created from the email if it's new.
+    const d = await body(req);
+    const method = d.method === "cashapp" ? "cashapp" : d.method === "zelle" ? "zelle" : "";
+    if (!method) return fail(400, "Pick Zelle or Cash App.");
+    if (method === "zelle" && !coach.zelle_handle) return fail(400, "Zelle isn't set up yet. Pick another way to pay.");
+    if (method === "cashapp" && !coach.cashapp_tag) return fail(400, "Cash App isn't set up yet. Pick another way to pay.");
+    const [pkg] = await q(
+      `SELECT * FROM packages WHERE id = $1 AND coach_id = $2 AND active AND (offer_token IS NULL OR offer_token = $3)`,
+      [int(d.packageId), coach.id, str(d.offer, 100)]);
+    if (!pkg) return fail(404, "That package isn't available.");
+    const people = partySize(pkg, d.people);
+    const proof = decodeProof(d.proof);
+
+    // Signed-in clients buy on their own account; everyone else is matched or created by email.
+    const sessionClientId = await sessionUser(req, "client");
+    const [signedIn] = sessionClientId ? await q(`SELECT * FROM clients WHERE id = $1 AND coach_id = $2`, [sessionClientId, coach.id]) : [];
+    let client = signedIn, created = false;
+    if (!client) {
+      const email = normEmail(d.email), name = str(d.name, 80);
+      if (!name) return fail(400, "Add your name.");
+      if (!validEmail(email)) return fail(400, "Enter a valid email address.");
+      [client] = await q(`SELECT * FROM clients WHERE coach_id = $1 AND email = $2`, [coach.id, email]);
+      if (!client) {
+        [client] = await q(
+          `INSERT INTO clients (coach_id, email, password_hash, name, phone) VALUES ($1, $2, NULL, $3, $4) RETURNING *`,
+          [coach.id, email, name, str(d.phone, 30)]);
+        created = true;
+      }
+    }
+    const [{ n }] = await q(
+      `SELECT COUNT(*)::int AS n FROM purchases WHERE client_id = $1 AND status = 'pending' AND submitted_at > NOW() - INTERVAL '1 day'`,
+      [client.id]);
+    if (n >= 5) return fail(429, "You have several payments waiting for review already. Your coach will get to them soon.");
+
+    const purchase = await tx(async (t) => {
+      const [p] = await t(
+        `INSERT INTO purchases (coach_id, client_id, package_id, package_name, lessons_total, amount_cents, method, status,
+           package_kind, party_size, submitted_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, NOW()) RETURNING *`,
+        [coach.id, client.id, pkg.id, pkg.name, pkg.lesson_count, packageTotal(pkg, people), method, pkg.kind, people]);
+      await t(`INSERT INTO payment_proofs (purchase_id, mime, data) VALUES ($1, $2, $3)`, [p.id, proof.mime, proof.data]);
+      return p;
+    });
+    // A brand-new account is signed in on this device right away. Existing accounts sign in as usual.
+    const token = created || signedIn ? (signedIn ? null : await createSession("client", client.id)) : null;
+    return json({
+      purchaseId: purchase.id, amountCents: purchase.amount_cents, email: client.email,
+      accountCreated: created, token, needsPassword: !client.password_hash,
+    }, 201);
+  }
+
   if (m === "POST" && a === "inquiries") {
     const d = await body(req);
     if (str(d.website)) return json({ ok: true });            // honeypot: bots fill every field
@@ -219,6 +285,14 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
 
   if (m === "POST" && a === "logout") { await endSession(req); return json({ ok: true }); }
 
+  if (m === "POST" && a === "password") {
+    const d = await body(req);
+    const pw = String(d.password ?? "");
+    if (pw.length < 8) return fail(400, "Use at least 8 characters for your password.");
+    await q(`UPDATE clients SET password_hash = $2 WHERE id = $1`, [client.id, await hashPassword(pw)]);
+    return json({ ok: true });
+  }
+
   if (m === "GET" && a === "me") {
     const credits = await openCredits(q, client.id);
     const lessons = await q(
@@ -227,9 +301,11 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
        ORDER BY l.starts_at DESC LIMIT 100`, [client.id]);
     const purchases = await q(
       `SELECT p.*, (SELECT COUNT(*)::int FROM lessons l WHERE l.purchase_id = p.id AND l.status <> 'canceled') AS lessons_used
-       FROM purchases p WHERE client_id = $1 AND status IN ('paid', 'refunded') ORDER BY created_at DESC`, [client.id]);
+       FROM purchases p WHERE client_id = $1
+         AND (status IN ('paid', 'refunded') OR (method IN ('zelle', 'cashapp') AND status IN ('pending', 'rejected')))
+       ORDER BY created_at DESC`, [client.id]);
     return json({
-      client: { name: client.name, email: client.email, phone: client.phone },
+      client: { name: client.name, email: client.email, phone: client.phone, hasPassword: Boolean(client.password_hash) },
       creditsRemaining: credits.reduce((s, c) => s + c.remaining, 0),
       credits: credits.map((c) => ({
         purchaseId: c.id, packageName: c.package_name, remaining: c.remaining, expiresAt: c.expires_at,
@@ -357,6 +433,11 @@ async function coachDashboard(coach: any) {
   const packages = await q(`SELECT * FROM packages WHERE coach_id = $1 ORDER BY active DESC, sort_order, price_cents`, [id]);
   const availability = await q(`SELECT weekday, start_min, end_min FROM availability WHERE coach_id = $1 ORDER BY weekday, start_min`, [id]);
   const timeOff = await q(`SELECT * FROM time_off WHERE coach_id = $1 AND ends_at > NOW() ORDER BY starts_at`, [id]);
+  const reviews = await q(
+    `SELECT p.*, c.name AS client_name, c.email AS client_email, c.phone AS client_phone FROM purchases p
+     JOIN clients c ON c.id = p.client_id
+     WHERE p.coach_id = $1 AND p.method IN ('zelle', 'cashapp') AND p.status = 'pending'
+     ORDER BY p.submitted_at`, [id]);
   const inquiries = await q(
     `SELECT * FROM inquiries WHERE coach_id = $1 AND (status <> 'closed' OR created_at > NOW() - INTERVAL '90 days')
      ORDER BY (status = 'new') DESC, created_at DESC LIMIT 100`, [id]);
@@ -365,7 +446,9 @@ async function coachDashboard(coach: any) {
     coach: {
       ...publicCoach(coach), email: coach.email, slotStepMinutes: coach.slot_step_minutes, bufferMinutes: coach.buffer_minutes,
       stripeConnected: Boolean(coach.stripe_account_id), payoutsReady: coach.stripe_payouts_ready,
+      zelleHandle: coach.zelle_handle, cashappTag: coach.cashapp_tag, paymentNote: coach.payment_note,
     },
+    reviews: reviews.map((p) => ({ ...purchaseOut(p), clientEmail: p.client_email, clientPhone: p.client_phone, methodLabel: METHOD_LABEL[p.method] })),
     paymentsReady: paymentsConfigured(),
     paymentsFake: process.env.PAYMENTS_MODE === "fake",
     money: {
@@ -457,6 +540,14 @@ async function coachRoutes(req: Request, parts: string[]): Promise<Response> {
        n(d.minNoticeHours, coach.min_notice_hours, 0, 168),
        n(d.maxDaysAhead, coach.max_days_ahead, 1, 365),
        n(d.cancelWindowHours, coach.cancel_window_hours, 0, 168)]);
+    if (d.zelleHandle !== undefined || d.cashappTag !== undefined || d.paymentNote !== undefined) {
+      let tag = d.cashappTag === undefined ? coach.cashapp_tag : str(d.cashappTag, 40).replace(/\s+/g, "");
+      if (tag && !tag.startsWith("$")) tag = "$" + tag;
+      if (tag && !/^\$[A-Za-z][A-Za-z0-9_]{0,19}$/.test(tag)) return fail(400, "A Cash App $cashtag is a $ followed by up to 20 letters or numbers.");
+      await q(`UPDATE coaches SET zelle_handle = $2, cashapp_tag = $3, payment_note = $4 WHERE id = $1`,
+        [coach.id, d.zelleHandle === undefined ? coach.zelle_handle : str(d.zelleHandle, 120),
+         tag, d.paymentNote === undefined ? coach.payment_note : str(d.paymentNote, 400)]);
+    }
     return json({ ok: true });
   }
 
@@ -669,6 +760,30 @@ async function coachRoutes(req: Request, parts: string[]): Promise<Response> {
     });
     const sent = RELEASES.includes(status) ? await sendPendingReleases(coach.id).catch(() => null) : null;
     return json({ lesson: lessonOut(l), sent });
+  }
+
+  if (a === "purchases" && (c === "proof" || c === "approve" || c === "reject")) {
+    const [p] = await q(`SELECT * FROM purchases WHERE id = $1 AND coach_id = $2`, [int(b), coach.id]);
+    if (!p) return fail(404, "Payment not found.");
+    if (m === "GET" && c === "proof") {
+      const [img] = await q(`SELECT mime, data FROM payment_proofs WHERE purchase_id = $1`, [p.id]);
+      if (!img) return fail(404, "No screenshot on this payment.");
+      return json({ dataUrl: `data:${img.mime};base64,${Buffer.from(img.data).toString("base64")}` });
+    }
+    if (m === "POST" && p.status !== "pending") return fail(409, "This payment was already reviewed.");
+    if (m === "POST" && c === "approve") {
+      const [pkg] = p.package_id ? await q(`SELECT expires_days FROM packages WHERE id = $1`, [p.package_id]) : [];
+      await q(
+        `UPDATE purchases SET status = 'paid', paid_at = NOW(), reviewed_at = NOW(), expires_at = NOW() + make_interval(days => $2)
+         WHERE id = $1 AND status = 'pending'`, [p.id, pkg?.expires_days ?? 90]);
+      return json({ ok: true });
+    }
+    if (m === "POST" && c === "reject") {
+      const d = await body(req);
+      await q(`UPDATE purchases SET status = 'rejected', reviewed_at = NOW(), review_note = $2 WHERE id = $1 AND status = 'pending'`,
+        [p.id, str(d.note, 300)]);
+      return json({ ok: true });
+    }
   }
 
   if (m === "POST" && a === "releases" && b === "send") {

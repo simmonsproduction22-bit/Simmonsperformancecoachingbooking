@@ -44,7 +44,7 @@ test("slots respect windows, notice and busy times", () => {
 });
 
 test("full flow: buy, book, reschedule, cancel, complete, release, refund", async () => {
-  await q(`TRUNCATE coaches, clients, sessions, packages, purchases, availability, time_off, lessons, releases, inquiries RESTART IDENTITY CASCADE`);
+  await q(`TRUNCATE coaches, clients, sessions, packages, purchases, availability, time_off, lessons, releases, inquiries, payment_proofs RESTART IDENTITY CASCADE`);
 
   // Owner signs up with no code; a second coach can't without one.
   const coach = ok(await call("POST", "/api/coach/signup", { name: "Sam Coach", email: "sam@example.com", slug: "sam", password: "longpassword1", timezone: "America/Chicago" }), 201).token;
@@ -144,7 +144,7 @@ test("full flow: buy, book, reschedule, cancel, complete, release, refund", asyn
 
 
 test("groups, private offers, quote requests, starter packages", async () => {
-  await q(`TRUNCATE coaches, clients, sessions, packages, purchases, availability, time_off, lessons, releases, inquiries RESTART IDENTITY CASCADE`);
+  await q(`TRUNCATE coaches, clients, sessions, packages, purchases, availability, time_off, lessons, releases, inquiries, payment_proofs RESTART IDENTITY CASCADE`);
   const coach = ok(await call("POST", "/api/coach/signup", { name: "Sam", email: "sam@example.com", slug: "sam", password: "longpassword1" }), 201).token;
   ok(await call("PUT", "/api/coach/profile", { minNoticeHours: 0 }, coach));
   ok(await call("PUT", "/api/coach/availability", { windows: [0, 1, 2, 3, 4, 5, 6].map((d) => ({ weekday: d, startMin: 0, endMin: 1440 })) }, coach));
@@ -208,4 +208,67 @@ test("groups, private offers, quote requests, starter packages", async () => {
   ok(await call("POST", "/api/coach/purchases/offline", { clientId: 1, packageId: group.id, people: 5 }, coach), 201);
   const [off] = await q(`SELECT amount_cents, party_size FROM purchases WHERE method = 'offline'`);
   assert.deepEqual(off, { amount_cents: 25000, party_size: 5 });
+});
+
+test("pay by Zelle or Cash App without an account, coach approves", async () => {
+  await q(`TRUNCATE coaches, clients, sessions, packages, purchases, availability, time_off, lessons, releases, inquiries, payment_proofs RESTART IDENTITY CASCADE`);
+  const coach = ok(await call("POST", "/api/coach/signup", { name: "Sam", email: "sam@example.com", slug: "sam", password: "longpassword1" }), 201).token;
+  ok(await call("PUT", "/api/coach/profile", { minNoticeHours: 0, zelleHandle: "pay@sam.example", cashappTag: "SamCoaching" }, coach));
+  ok(await call("PUT", "/api/coach/availability", { windows: [0, 1, 2, 3, 4, 5, 6].map((d) => ({ weekday: d, startMin: 0, endMin: 1440 })) }, coach));
+  ok(await call("POST", "/api/coach/starter-packages", {}, coach), 201);
+  const pub = ok(await call("GET", "/api/c/sam"));
+  assert.deepEqual(pub.coach.payment, { zelle: "pay@sam.example", cashapp: "$SamCoaching", note: "" });
+  const eight = pub.packages.find((p) => p.lessonCount === 8);
+  const group = pub.packages.find((p) => p.kind === "group");
+  const proof = "data:image/jpeg;base64," + Buffer.alloc(2000, 7).toString("base64");
+
+  // Missing screenshot / email are refused.
+  assert.equal((await call("POST", "/api/c/sam/manual-purchase", { packageId: eight.id, method: "zelle", name: "Ana", email: "ana@example.com" })).status, 400);
+  assert.equal((await call("POST", "/api/c/sam/manual-purchase", { packageId: eight.id, method: "zelle", name: "Ana", proof })).status, 400);
+
+  // New email: account created and signed in on this device; nothing to book until approved.
+  const r = ok(await call("POST", "/api/c/sam/manual-purchase", { packageId: eight.id, method: "zelle", name: "Ana", email: "Ana@Example.com", proof }), 201);
+  assert.equal(r.accountCreated, true); assert.ok(r.token); assert.equal(r.amountCents, 88000); assert.equal(r.needsPassword, true);
+  let me = ok(await call("GET", "/api/c/sam/me", null, r.token));
+  assert.equal(me.creditsRemaining, 0);
+  assert.equal(me.purchases[0].status, "pending");
+  assert.equal(me.client.hasPassword, false);
+  assert.match((await call("POST", "/api/c/sam/login", { email: "ana@example.com", password: "whatever1" })).body.error, /doesn't have a password/);
+
+  // Same email again from another device: linked to the same account, but not signed in.
+  const r2 = ok(await call("POST", "/api/c/sam/manual-purchase", { packageId: group.id, people: 4, method: "cashapp", name: "Ana", email: "ana@example.com", proof }), 201);
+  assert.equal(r2.accountCreated, false); assert.equal(r2.token, null); assert.equal(r2.amountCents, 20000);
+
+  // Coach sees both, views the screenshot, approves one and rejects the other.
+  let dash = ok(await call("GET", "/api/coach/dashboard", null, coach));
+  assert.equal(dash.reviews.length, 2);
+  assert.equal(dash.reviews[0].clientEmail, "ana@example.com");
+  assert.equal(dash.reviews[0].methodLabel, "Zelle");
+  assert.match(ok(await call("GET", `/api/coach/purchases/${r.purchaseId}/proof`, null, coach)).dataUrl, /^data:image\/jpeg;base64,/);
+  ok(await call("POST", `/api/coach/purchases/${r.purchaseId}/approve`, {}, coach));
+  assert.equal((await call("POST", `/api/coach/purchases/${r.purchaseId}/approve`, {}, coach)).status, 409);
+  ok(await call("POST", `/api/coach/purchases/${r2.purchaseId}/reject`, { note: "Couldn't find this payment" }, coach));
+  dash = ok(await call("GET", "/api/coach/dashboard", null, coach));
+  assert.equal(dash.reviews.length, 0);
+
+  // Approved: 8 lessons to book. Rejected one shows with the note.
+  me = ok(await call("GET", "/api/c/sam/me", null, r.token));
+  assert.equal(me.creditsRemaining, 8);
+  assert.equal(me.purchases.find((p) => p.id === r2.purchaseId).reviewNote, "Couldn't find this payment");
+  const slot = new Date(Math.ceil((Date.now() + 2 * 864e5) / 36e5) * 36e5).toISOString();
+  ok(await call("POST", "/api/c/sam/lessons", { startsAt: slot }, r.token), 201);
+
+  // Client sets a password and can sign in anywhere.
+  ok(await call("POST", "/api/c/sam/password", { password: "newpassword9" }, r.token));
+  ok(await call("POST", "/api/c/sam/login", { email: "ana@example.com", password: "newpassword9" }));
+
+  // Completing a Zelle-paid lesson tracks earnings without any transfer.
+  await q(`UPDATE lessons SET starts_at = NOW() - INTERVAL '2 hours', ends_at = NOW() - INTERVAL '1 hour'`);
+  const [lesson] = await q(`SELECT id FROM lessons`);
+  ok(await call("POST", `/api/coach/lessons/${lesson.id}/status`, { status: "completed" }, coach));
+  const [rel] = await q(`SELECT status, amount_cents FROM releases`);
+  assert.deepEqual(rel, { status: "not_held", amount_cents: 11000 });
+
+  // A bad $cashtag is refused.
+  assert.equal((await call("PUT", "/api/coach/profile", { cashappTag: "$not valid!" }, coach)).status, 400);
 });
