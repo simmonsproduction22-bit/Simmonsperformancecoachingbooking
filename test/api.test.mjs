@@ -154,7 +154,7 @@ test("groups, private offers, quote requests, starter packages", async () => {
   assert.equal((await call("POST", "/api/coach/starter-packages", {}, coach)).status, 409);
   const pub = ok(await call("GET", "/api/c/sam"));
   assert.deepEqual(pub.packages.map((p) => [p.name, p.priceCents / p.lessonCount]),
-    [["Single Lesson", 12500], ["8-Lesson Pack", 11000], ["12-Lesson Pack", 10000], ["Small Group Lesson", 5000]]);
+    [["12-Lesson Pack", 10000], ["8-Lesson Pack", 11000], ["Single Lesson", 12500], ["Small Group Lesson", 5000]]);
   const group = pub.packages.find((p) => p.kind === "group");
 
   // Group of 4 pays $200; group of 2 is refused.
@@ -254,6 +254,7 @@ test("pay by Zelle or Cash App without an account, coach approves", async () => 
   // Approved: 8 lessons to book. Rejected one shows with the note.
   me = ok(await call("GET", "/api/c/sam/me", null, r.token));
   assert.equal(me.creditsRemaining, 8);
+  assert.equal(me.credits[0].expiresAt, null, "packages no longer expire");
   assert.equal(me.purchases.find((p) => p.id === r2.purchaseId).reviewNote, "Couldn't find this payment");
   const slot = new Date(Math.ceil((Date.now() + 2 * 864e5) / 36e5) * 36e5).toISOString();
   ok(await call("POST", "/api/c/sam/lessons", { startsAt: slot }, r.token), 201);

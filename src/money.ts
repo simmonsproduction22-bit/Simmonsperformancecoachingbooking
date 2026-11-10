@@ -115,9 +115,9 @@ export async function confirmPurchase(purchaseId: number): Promise<boolean> {
     const [row] = await t(`SELECT status FROM purchases WHERE id = $1 FOR UPDATE`, [p.id]);
     if (row.status === "paid") return true;
     const [pkg] = p.package_id ? await t(`SELECT expires_days FROM packages WHERE id = $1`, [p.package_id]) : [];
-    const days = pkg?.expires_days ?? 90;
+    const days = pkg?.expires_days ?? 0;   // 0 = never expires
     await t(
-      `UPDATE purchases SET status = 'paid', paid_at = NOW(), expires_at = NOW() + make_interval(days => $2),
+      `UPDATE purchases SET status = 'paid', paid_at = NOW(), expires_at = CASE WHEN $2::int > 0 THEN NOW() + make_interval(days => $2::int) END,
          stripe_payment_intent = $3, stripe_charge_id = $4 WHERE id = $1`,
       [p.id, days, c.paymentIntent, c.chargeId]);
     return true;

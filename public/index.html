@@ -54,9 +54,12 @@ p { margin: 0 0 .75em; }
 /* Header */
 header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: rgba(5, 5, 5, .78); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); }
 header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 16px; }
-.brand { display: inline-flex; align-items: center; gap: 12px; font: 800 20px/1 var(--display); text-transform: uppercase; letter-spacing: .03em; text-decoration: none; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.logo-mark { position: relative; display: inline-block; flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; isolation: isolate;
-  box-shadow: 0 0 0 1px rgba(176,130,59,.4), 0 0 18px rgba(176,130,59,.28); }
+.brand { display: inline-flex; align-items: center; gap: 12px; font: 800 20px/1 var(--display); text-transform: uppercase; letter-spacing: .03em; text-decoration: none; color: var(--text); min-width: 0; }
+.brand-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; padding-block: 2px; }
+.head-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.call-btn { gap: 6px; flex: 0 0 auto; }
+.logo-mark { position: relative; display: inline-block; flex: 0 0 auto; width: 46px; height: 46px; border-radius: 50%; overflow: hidden; isolation: isolate;
+  box-shadow: 0 0 16px rgba(176,130,59,.22); }
 .logo-mark img { width: 100%; height: 100%; display: block; }
 /* Shine: a light band slides across, masked to the gold strokes so the black field stays black. */
 .logo-mark::after { content: ""; position: absolute; inset: 0; pointer-events: none;
@@ -184,6 +187,7 @@ details > summary::-webkit-details-marker { display: none; }
 .policies div { padding: 14px 16px; border-radius: var(--radius); background: var(--bg-2); border: 1px solid var(--border); font-size: 14px; color: #d9d9d9; }
 .policies b { display: block; font: 800 22px/1 var(--display); color: var(--text); margin-bottom: 6px; text-transform: uppercase; }
 
+.pk-note { margin: 14px 0 0; padding: 12px 16px; border-left: 2px solid var(--accent); background: rgba(176,130,59,.06); border-radius: 0 10px 10px 0; font-size: 14px; color: var(--text-2, #d9d9d9); }
 .creds { list-style: none; padding: 0; margin: 0 0 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; }
 .creds li { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text); }
 .creds li::before { content: ""; width: 6px; height: 6px; transform: rotate(45deg); background: var(--gold-grad); }
@@ -246,8 +250,11 @@ details > summary::-webkit-details-marker { display: none; }
 @media (max-width: 560px) {
   .hide-sm { display: none !important; }
   header.top .wrap { height: 58px; gap: 10px; }
-  .brand { font-size: 17px; white-space: normal; line-height: 1.05; overflow: visible; }
-  .brand .logo-mark { width: 34px; height: 34px; }
+  .brand { font-size: 16px; gap: 9px; }
+  .brand .logo-mark { width: 40px; height: 40px; }
+  .brand-name { white-space: normal; line-height: 1.05; }
+  .head-left { gap: 10px; }
+  .call-btn { padding: 6px 12px; }
   .band.solo { grid-template-columns: 1fr; }
   .band-logo { display: none; }
   .section { margin: 28px 0; }
@@ -557,7 +564,7 @@ async function coachPage(slug) {
         : `<div class="price">${money(p.priceCents)}</div>
            <div class="per">${p.lessonCount} lesson${p.lessonCount > 1 ? "s" : ""}${p.lessonCount > 1 ? ` · <b>${money(per)}</b> each` : ""}</div>`}
       <p class="desc" style="white-space:pre-line;margin:6px 0 0">${esc(p.description)}</p>
-      <p class="muted small" style="margin:0">Use within ${p.expiresDays} days</p>
+      ${p.expiresDays ? `<p class="muted small" style="margin:0">Use within ${p.expiresDays} days</p>` : ""}
       <button class="${opts.best || opts.offer ? "primary" : ""} block" style="margin-top:8px" data-act="buy" data-id="${p.id}" ${canPay ? "" : "disabled"}>${p.kind === "group" ? "Choose group size" : "Buy package"}</button>
     </div>`;
   }
@@ -596,7 +603,11 @@ async function coachPage(slug) {
 
     app.innerHTML = `
       <header class="top"><div class="wrap">
-        <a class="brand" href="/${esc(slug)}">${logoMark()}${esc(coach.name)}</a>
+        <div class="head-left">
+          <a class="brand" href="/${esc(slug)}">${logoMark()}<span class="brand-name">${esc(coach.name)}</span></a>
+          ${coach.contactPhone ? `<a class="btn sm primary call-btn" href="tel:+1${esc(coach.contactPhone.replace(/\D/g, "").slice(-10))}" aria-label="Call ${esc(coach.contactPhone)}">
+            <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>Call</a>` : ""}
+        </div>
         <nav class="nav-links" aria-label="Sections">
           <a data-act="go" data-to="packages">Lessons</a>
           ${groupPkgs.length ? `<a data-act="go" data-to="groups">Groups</a>` : ""}
@@ -693,6 +704,7 @@ async function coachPage(slug) {
             <p class="muted small" style="margin:0">${canPay ? `Pay with ${payMethods.map((m) => m[1]).join(" or ")}. No account needed.` : "Online payment isn't set up yet"}</p>
           </div>
           ${privatePkgs.length ? `<div class="grid pk">${privatePkgs.map((p) => pkgCard(p, { best: best && p.id === best.id })).join("")}</div>` : `<p class="muted">Packages coming soon.</p>`}
+          <p class="pk-note">Group packages are available too. Contact ${esc(coach.name)} directly for details${coach.contactPhone || coach.contactEmail ? ": " : "."}${coach.contactPhone ? `call or text <a href="tel:+1${esc(coach.contactPhone.replace(/\D/g, "").slice(-10))}">${esc(coach.contactPhone)}</a>` : ""}${coach.contactPhone && coach.contactEmail ? " or email " : ""}${coach.contactEmail ? `<a href="mailto:${esc(coach.contactEmail)}">${esc(coach.contactEmail)}</a>` : ""}${coach.contactPhone || coach.contactEmail ? "." : ""}</p>
         </section>
 
         ${groupPkgs.length ? `
@@ -749,7 +761,7 @@ async function coachPage(slug) {
         </section>
       </main>
       <footer><div class="wrap row spread">
-        <span class="brand" style="font-size:16px">${logoMark()}${esc(coach.name)}</span>
+        <span class="brand" style="font-size:16px">${logoMark()}<span class="brand-name">${esc(coach.name)}</span></span>
         <span class="foot-contact">
           ${coach.contactEmail ? `<a href="mailto:${esc(coach.contactEmail)}">${esc(coach.contactEmail)}</a>` : ""}
           ${coach.contactPhone ? `<span>Call or text <a href="tel:+1${esc(coach.contactPhone.replace(/\D/g, "").slice(-10))}">${esc(coach.contactPhone)}</a></span>` : ""}
@@ -1070,7 +1082,7 @@ async function coachApp() {
     const todo = setupSteps.filter((s) => !s[0]);
     app.innerHTML = `
       <header class="top"><div class="wrap">
-        <span class="brand">${logoMark()}${esc(d.coach.name)}</span>
+        <span class="brand">${logoMark()}<span class="brand-name">${esc(d.coach.name)}</span></span>
         <div class="row" style="flex-wrap:nowrap;gap:8px"><a class="btn sm" href="/${esc(d.coach.slug)}" target="_blank" rel="noopener">My page</a><button class="sm ghost" data-act="logout">Sign out</button></div>
       </div></header>
       <main class="wrap">
@@ -1437,7 +1449,7 @@ async function coachApp() {
           <div class="row spread"><h3 style="margin:0">${esc(p.name)}</h3>${p.active ? "" : `<span class="pill">Hidden</span>`}</div>
           ${p.isOffer ? `<div><span class="pill accent">Private offer${p.offerFor ? " · " + esc(p.offerFor) : ""}</span></div>` : ""}
           <div class="price">${money(p.priceCents)}${p.kind === "group" ? ` <span class="muted" style="font-size:15px;font-weight:500">per person</span>` : ""}</div>
-          <p class="muted small">${p.kind === "group" ? `${p.minPeople}–${p.maxPeople} people · ` : ""}${p.lessonCount} lesson${p.lessonCount > 1 ? "s" : ""}${p.kind === "group" ? "" : ` · ${money(Math.floor(p.priceCents / p.lessonCount))} per lesson`} · ${p.expiresDays}-day use-by</p>
+          <p class="muted small">${p.kind === "group" ? `${p.minPeople}–${p.maxPeople} people · ` : ""}${p.lessonCount} lesson${p.lessonCount > 1 ? "s" : ""}${p.kind === "group" ? "" : ` · ${money(Math.floor(p.priceCents / p.lessonCount))} per lesson`}${p.expiresDays ? ` · ${p.expiresDays}-day use-by` : ""}</p>
           <p class="desc small" style="white-space:pre-line">${esc(p.description)}</p>
           <div class="row"><button class="sm" data-act="pkg" data-id="${p.id}">Edit</button>
           ${p.isOffer ? `<button class="sm" data-act="copy" data-text="${esc(offerUrl(p))}">Copy offer link</button>` : ""}</div>
@@ -1448,7 +1460,7 @@ async function coachApp() {
         <p class="muted">Adds Single $125, 8-Pack $880 ($110 each), 12-Pack $1,200 ($100 each), and Small Group at $50 per person for 3 or more people. You can edit any of them.</p>
         <button class="primary" data-act="starter">Add these packages</button></div>`}
       ${offers.length ? `<h2 style="margin-top:28px">Private offers</h2><p class="muted small">Only people with the link can see and buy these.</p><div class="grid">${offers.map(card).join("")}</div>` : ""}
-      <p class="muted small" style="margin-top:14px">Keep use-by at 90 days or less: Stripe can only hold card payments for a limited time.</p>`;
+`;
   }
 
   function packageSheet(p, preset = {}) {
@@ -1469,7 +1481,6 @@ async function coachApp() {
       <div class="fields">
         <div class="field"><label for="pk-n">Lessons</label><input id="pk-n" name="lessonCount" type="number" min="1" max="100" required value="${p?.lessonCount || (isOffer ? 4 : 5)}"></div>
         <div class="field"><label for="pk-price" id="pk-price-l">${kind === "group" ? "Price per person ($)" : "Total price ($)"}</label><input id="pk-price" name="price" type="number" min="1" step="0.01" required value="${p ? (p.priceCents / 100).toFixed(2) : ""}"></div>
-        <div class="field"><label for="pk-exp">Use within (days)</label><input id="pk-exp" name="expiresDays" type="number" min="7" max="365" required value="${p?.expiresDays || 90}"></div>
       </div>
       <div class="field"><label for="pk-desc">Description</label><textarea id="pk-desc" name="description" maxlength="1000">${esc(p?.description || "")}</textarea></div>
       ${p ? `<div class="field"><label><input type="checkbox" name="active" ${p.active ? "checked" : ""} style="width:auto"> Show on my page</label></div>` : ""}
@@ -1482,7 +1493,7 @@ async function coachApp() {
       };
       handleForm($("form", body), async (f) => {
         const payload = { name: f.name, description: f.description, lessonCount: +f.lessonCount, priceCents: Math.round(parseFloat(f.price) * 100),
-          expiresDays: +f.expiresDays, active: p ? f.active === "on" : true, sortOrder: p?.sortOrder || 0,
+          expiresDays: p?.expiresDays || 0, active: p ? f.active === "on" : true, sortOrder: p?.sortOrder || 0,
           kind: f.kind, minPeople: +f.minPeople, maxPeople: +f.maxPeople, offer: isOffer, offerFor: f.offerFor };
         const r = await api(p ? "PUT" : "POST", p ? `/coach/packages/${p.id}` : "/coach/packages", payload, token);
         if (preset.inquiry) await api("PUT", `/coach/inquiries/${preset.inquiry.id}`, { status: "replied" }, token);
