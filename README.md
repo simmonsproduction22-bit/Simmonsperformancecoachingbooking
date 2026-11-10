@@ -104,4 +104,4 @@ COACH_DB_URL="$DB" PAYMENTS_MODE=fake npm test                      # wipes the 
 
 ## Photo credits
 
-`public/corporate.jpg` is a free stock photo from Unsplash (photo ID `1549576490-b0b4831ef60a`), used under the Unsplash License: free for commercial use, no attribution required. The other photos are the coach's own.
+`public/corporate.jpg` is the main training floor at Fortis MMA, taken from the Fortis MMA website (`img/hero-bg.jpg`). The other photos are the coach's own.
