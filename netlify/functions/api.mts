@@ -316,7 +316,9 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
       } catch (e: any) {
         await q(`UPDATE purchases SET status = 'canceled' WHERE id = $1`, [purchase.id]);
         console.error("checkout failed", e);
-        return fail(502, "Couldn't start card checkout. Try again in a minute, or pay with Zelle or Cash App.");
+        // Stripe's own message (never contains the key) helps the coach fix setup problems like missing key permissions.
+        const why = String(e?.raw?.message || e?.message || "").replace(/\b[rs]k_(live|test)_\w+/g, "[key]").slice(0, 300);
+        return fail(502, `Couldn't start card checkout. Try again in a minute, or pay with Zelle or Cash App.${why ? ` (Stripe: ${why})` : ""}`);
       }
     }
 
