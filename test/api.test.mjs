@@ -66,7 +66,7 @@ test("full flow: buy, book, reschedule, cancel, complete, release, refund", asyn
   assert.equal(pub.packages.length, 2);
 
   // Client signs up and buys.
-  const client = ok(await call("POST", "/api/c/sam/signup", { name: "Pat Client", email: "pat@example.com", password: "password12" }), 201).token;
+  const client = ok(await call("POST", "/api/c/sam/signup", { phone: "4695550100", name: "Pat Client", email: "pat@example.com", password: "password12" }), 201).token;
   const co = ok(await call("POST", "/api/c/sam/checkout", { packageId: pkg.id }, client));
   assert.match(co.url, /\/sam\?paid=\d+/);
   assert.equal(ok(await call("POST", `/api/c/sam/purchases/${co.purchaseId}/confirm`, {}, client)).paid, true);
@@ -80,7 +80,7 @@ test("full flow: buy, book, reschedule, cancel, complete, release, refund", asyn
   const l1 = ok(await call("POST", "/api/c/sam/lessons", { startsAt: slots[0] }, client), 201).lesson;
 
   // Someone else can't take the same slot.
-  const other = ok(await call("POST", "/api/c/sam/signup", { name: "Other", email: "o@example.com", password: "password12" }), 201).token;
+  const other = ok(await call("POST", "/api/c/sam/signup", { phone: "4695550100", name: "Other", email: "o@example.com", password: "password12" }), 201).token;
   ok(await call("POST", "/api/c/sam/purchases/" + ok(await call("POST", "/api/c/sam/checkout", { packageId: pkg3.id }, other)).purchaseId + "/confirm", {}, other));
   assert.equal((await call("POST", "/api/c/sam/lessons", { startsAt: slots[0] }, other)).status, 409);
   assert.equal((await call("POST", "/api/c/sam/lessons", { startsAt: slots[1] }, other)).status, 409, "30 min later overlaps a 60 min lesson");
@@ -165,7 +165,7 @@ test("groups, private offers, quote requests, starter packages", async () => {
   const group = pub.packages.find((p) => p.kind === "group");
 
   // Group of 4 pays $200; group of 2 is refused.
-  const client = ok(await call("POST", "/api/c/sam/signup", { name: "Pat", email: "pat@example.com", password: "password12" }), 201).token;
+  const client = ok(await call("POST", "/api/c/sam/signup", { phone: "4695550100", name: "Pat", email: "pat@example.com", password: "password12" }), 201).token;
   assert.equal((await call("POST", "/api/c/sam/checkout", { packageId: group.id, people: 2 }, client)).status, 400);
   const g = ok(await call("POST", "/api/c/sam/checkout", { packageId: group.id, people: 4 }, client));
   ok(await call("POST", `/api/c/sam/purchases/${g.purchaseId}/confirm`, {}, client));
@@ -195,8 +195,8 @@ test("groups, private offers, quote requests, starter packages", async () => {
   assert.equal(r.amount_cents, 20000);
 
   // Corporate: quote request -> private offer link -> purchase.
-  ok(await call("POST", "/api/c/sam/inquiries", { name: "Dana HR", email: "dana@acme.com", company: "Acme", groupSize: "20", message: "Monthly wellness sessions" }), 201);
-  ok(await call("POST", "/api/c/sam/inquiries", { name: "Bot", email: "bot@x.com", website: "spam" }));
+  ok(await call("POST", "/api/c/sam/inquiries", { phone: "4695550100", name: "Dana HR", email: "dana@acme.com", company: "Acme", groupSize: "20", message: "Monthly wellness sessions" }), 201);
+  ok(await call("POST", "/api/c/sam/inquiries", { phone: "4695550100", name: "Bot", email: "bot@x.com", website: "spam" }));
   let dash = ok(await call("GET", "/api/coach/dashboard", null, coach));
   assert.equal(dash.inquiries.length, 1);
   assert.equal(dash.inquiries[0].status, "new");
@@ -204,7 +204,7 @@ test("groups, private offers, quote requests, starter packages", async () => {
   assert.ok(offer.offerToken);
   assert.equal(ok(await call("GET", "/api/c/sam")).packages.some((p) => p.isOffer), false, "offers stay off the public page");
   assert.equal(ok(await call("GET", `/api/c/sam?offer=${offer.offerToken}`)).offer.name, "Acme Wellness");
-  const dana = ok(await call("POST", "/api/c/sam/signup", { name: "Dana", email: "dana@acme.com", password: "password12" }), 201).token;
+  const dana = ok(await call("POST", "/api/c/sam/signup", { phone: "4695550100", name: "Dana", email: "dana@acme.com", password: "password12" }), 201).token;
   assert.equal((await call("POST", "/api/c/sam/checkout", { packageId: offer.id }, dana)).status, 404, "needs the link");
   ok(await call("POST", "/api/c/sam/checkout", { packageId: offer.id, offer: offer.offerToken }, dana));
   ok(await call("PUT", `/api/coach/inquiries/${dash.inquiries[0].id}`, { status: "replied" }, coach));
@@ -231,11 +231,11 @@ test("pay by Zelle or Cash App without an account, coach approves", async () => 
   const proof = "data:image/jpeg;base64," + Buffer.alloc(2000, 7).toString("base64");
 
   // Missing screenshot / email are refused.
-  assert.equal((await call("POST", "/api/c/sam/manual-purchase", { packageId: eight.id, method: "zelle", name: "Ana", email: "ana@example.com" })).status, 400);
-  assert.equal((await call("POST", "/api/c/sam/manual-purchase", { packageId: eight.id, method: "zelle", name: "Ana", proof })).status, 400);
+  assert.equal((await call("POST", "/api/c/sam/manual-purchase", { phone: "4695550100", packageId: eight.id, method: "zelle", name: "Ana", email: "ana@example.com" })).status, 400);
+  assert.equal((await call("POST", "/api/c/sam/manual-purchase", { phone: "4695550100", packageId: eight.id, method: "zelle", name: "Ana", proof })).status, 400);
 
   // New email: account created and signed in on this device; nothing to book until approved.
-  const r = ok(await call("POST", "/api/c/sam/manual-purchase", { packageId: eight.id, method: "zelle", name: "Ana", email: "Ana@Example.com", proof }), 201);
+  const r = ok(await call("POST", "/api/c/sam/manual-purchase", { phone: "4695550100", packageId: eight.id, method: "zelle", name: "Ana", email: "Ana@Example.com", proof }), 201);
   assert.equal(r.accountCreated, true); assert.ok(r.token); assert.equal(r.amountCents, 88000); assert.equal(r.needsPassword, true);
   let me = ok(await call("GET", "/api/c/sam/me", null, r.token));
   assert.equal(me.creditsRemaining, 0);
@@ -244,7 +244,7 @@ test("pay by Zelle or Cash App without an account, coach approves", async () => 
   assert.match((await call("POST", "/api/c/sam/login", { email: "ana@example.com", password: "whatever1" })).body.error, /doesn't have a password/);
 
   // Same email again from another device: linked to the same account, but not signed in.
-  const r2 = ok(await call("POST", "/api/c/sam/manual-purchase", { packageId: group.id, people: 4, method: "cashapp", name: "Ana", email: "ana@example.com", proof }), 201);
+  const r2 = ok(await call("POST", "/api/c/sam/manual-purchase", { phone: "4695550100", packageId: group.id, people: 4, method: "cashapp", name: "Ana", email: "ana@example.com", proof }), 201);
   assert.equal(r2.accountCreated, false); assert.equal(r2.token, null); assert.equal(r2.amountCents, 20000);
 
   // Coach sees both, views the screenshot, approves one and rejects the other.
@@ -312,7 +312,7 @@ test("first coach gets the site setup; lesson locations; spam limits", async () 
   ok(await call("PUT", "/api/coach/availability", { windows: [0, 1, 2, 3, 4, 5, 6].map((d) => ({ weekday: d, startMin: 0, endMin: 1440 })) }, coach));
   const proof = "data:image/jpeg;base64," + Buffer.alloc(2000, 7).toString("base64");
   const ipA = { "x-nf-client-connection-ip": "203.0.113.5" };
-  const r = ok(await call("POST", "/api/c/simmons/manual-purchase", { packageId: pub.packages[2].id, method: "zelle", name: "Kai", email: "kai@example.com", proof }, null, ipA), 201);
+  const r = ok(await call("POST", "/api/c/simmons/manual-purchase", { phone: "4695550100", packageId: pub.packages[2].id, method: "zelle", name: "Kai", email: "kai@example.com", proof }, null, ipA), 201);
   ok(await call("POST", `/api/coach/purchases/${r.purchaseId}/approve`, {}, coach));
   const slot = new Date(Math.ceil((Date.now() + 2 * 864e5) / 36e5) * 36e5).toISOString();
   assert.match((await call("POST", "/api/c/simmons/lessons", { startsAt: slot }, r.token)).body.error, /where/);
@@ -324,8 +324,19 @@ test("first coach gets the site setup; lesson locations; spam limits", async () 
   assert.equal(me.lessons[0].location, "In-home training: 1200 Main St, Dallas");
 
   // Spam: honeypot refused; 5 submissions per sender per day.
-  assert.equal((await call("POST", "/api/c/simmons/manual-purchase", { packageId: pub.packages[2].id, method: "zelle", name: "Bot", email: "bot@example.com", proof, website: "x" }, null, ipA)).status, 400);
-  for (let i = 0; i < 4; i++) ok(await call("POST", "/api/c/simmons/manual-purchase", { packageId: pub.packages[2].id, method: "zelle", name: "S" + i, email: `s${i}@example.com`, proof }, null, ipA), 201);
-  assert.equal((await call("POST", "/api/c/simmons/manual-purchase", { packageId: pub.packages[2].id, method: "zelle", name: "S9", email: "s9@example.com", proof }, null, ipA)).status, 429);
-  ok(await call("POST", "/api/c/simmons/manual-purchase", { packageId: pub.packages[2].id, method: "zelle", name: "Other", email: "o@example.com", proof }, null, { "x-nf-client-connection-ip": "198.51.100.7" }), 201);
+  assert.equal((await call("POST", "/api/c/simmons/manual-purchase", { phone: "4695550100", packageId: pub.packages[2].id, method: "zelle", name: "Bot", email: "bot@example.com", proof, website: "x" }, null, ipA)).status, 400);
+  for (let i = 0; i < 4; i++) ok(await call("POST", "/api/c/simmons/manual-purchase", { phone: "4695550100", packageId: pub.packages[2].id, method: "zelle", name: "S" + i, email: `s${i}@example.com`, proof }, null, ipA), 201);
+  assert.equal((await call("POST", "/api/c/simmons/manual-purchase", { phone: "4695550100", packageId: pub.packages[2].id, method: "zelle", name: "S9", email: "s9@example.com", proof }, null, ipA)).status, 429);
+  ok(await call("POST", "/api/c/simmons/manual-purchase", { phone: "4695550100", packageId: pub.packages[2].id, method: "zelle", name: "Other", email: "o@example.com", proof }, null, { "x-nf-client-connection-ip": "198.51.100.7" }), 201);
+});
+
+test("phone number is required to sign up, buy and request a quote", async () => {
+  await q(`TRUNCATE coaches, clients, sessions, packages, purchases, availability, time_off, lessons, releases, inquiries, payment_proofs RESTART IDENTITY CASCADE`);
+  ok(await call("POST", "/api/coach/signup", { name: "SPC", email: "c@example.com", slug: "spc", password: "longpassword1" }), 201);
+  const pkg = ok(await call("GET", "/api/c/spc")).packages[0];
+  const proof = "data:image/jpeg;base64," + Buffer.alloc(2000, 7).toString("base64");
+  assert.match((await call("POST", "/api/c/spc/signup", { name: "A", email: "a@example.com", password: "password12" })).body.error, /phone/);
+  assert.match((await call("POST", "/api/c/spc/manual-purchase", { packageId: pkg.id, method: "zelle", name: "A", email: "a@example.com", proof, phone: "123" })).body.error, /phone/);
+  assert.match((await call("POST", "/api/c/spc/inquiries", { name: "A", email: "a@example.com" })).body.error, /phone/);
+  ok(await call("POST", "/api/c/spc/manual-purchase", { packageId: pkg.id, method: "zelle", name: "A", email: "a@example.com", proof, phone: "(469) 555-0100" }), 201);
 });

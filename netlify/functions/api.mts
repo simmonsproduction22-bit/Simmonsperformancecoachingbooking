@@ -24,6 +24,9 @@ const fail = (status: number, message: string) => json({ error: message }, statu
 async function body(req: Request): Promise<Record<string, any>> {
   try { const b = await req.json(); return b && typeof b === "object" ? b : {}; } catch { return {}; }
 }
+/** A US phone number: 10 digits, optionally with a leading 1. */
+const validPhone = (v: unknown) => /^1?\d{10}$/.test(String(v ?? "").replace(/\D/g, ""));
+const PHONE_MSG = "Add a phone number we can reach you at.";
 const str = (v: unknown, max = 200) => String(v ?? "").trim().slice(0, max);
 const int = (v: unknown) => (Number.isInteger(Number(v)) ? Number(v) : NaN);
 /** The caller's IP as Netlify reports it (used only for rate limits). */
@@ -228,6 +231,8 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
     const sessionClientId = await sessionUser(req, "client");
     const [signedIn] = sessionClientId ? await q(`SELECT * FROM clients WHERE id = $1 AND coach_id = $2`, [sessionClientId, coach.id]) : [];
     let client = signedIn, created = false;
+    const phone = str(d.phone, 30);
+    if (!(client && validPhone(client.phone)) && !validPhone(phone)) return fail(400, PHONE_MSG);
     if (!client) {
       const email = normEmail(d.email), name = str(d.name, 80);
       if (!name) return fail(400, "Add your name.");
@@ -236,10 +241,11 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
       if (!client) {
         [client] = await q(
           `INSERT INTO clients (coach_id, email, password_hash, name, phone) VALUES ($1, $2, NULL, $3, $4) RETURNING *`,
-          [coach.id, email, name, str(d.phone, 30)]);
+          [coach.id, email, name, phone]);
         created = true;
       }
     }
+    if (!validPhone(client.phone) && validPhone(phone)) await q(`UPDATE clients SET phone = $2 WHERE id = $1`, [client.id, phone]);
     const [{ n }] = await q(
       `SELECT COUNT(*)::int AS n FROM purchases WHERE client_id = $1 AND status = 'pending' AND submitted_at > NOW() - INTERVAL '1 day'`,
       [client.id]);
@@ -269,6 +275,7 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
     const name = str(d.name, 80), email = normEmail(d.email);
     if (!name) return fail(400, "Add your name.");
     if (!validEmail(email)) return fail(400, "Enter a valid email address.");
+    if (!validPhone(d.phone)) return fail(400, PHONE_MSG);
     const [{ n }] = await q(
       `SELECT COUNT(*)::int AS n FROM inquiries WHERE coach_id = $1 AND email = $2 AND created_at > NOW() - INTERVAL '1 day'`,
       [coach.id, email]);
@@ -294,6 +301,7 @@ async function clientRoutes(req: Request, slug: string, parts: string[]): Promis
     const email = normEmail(d.email), name = str(d.name, 80), phone = str(d.phone, 30), pw = String(d.password ?? "");
     if (!name) return fail(400, "Add your name.");
     if (!validEmail(email)) return fail(400, "Enter a valid email address.");
+    if (!validPhone(phone)) return fail(400, PHONE_MSG);
     if (pw.length < 8) return fail(400, "Use at least 8 characters for your password.");
     const [exists] = await q(`SELECT id FROM clients WHERE coach_id = $1 AND email = $2`, [coach.id, email]);
     if (exists) return fail(409, "You already have an account. Sign in instead.");

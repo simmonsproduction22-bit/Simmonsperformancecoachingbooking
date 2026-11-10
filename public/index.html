@@ -828,7 +828,7 @@ async function coachPage(slug, sub = "") {
                   <div class="field"><label for="ct-name">Name</label><input id="ct-name" name="name" required autocomplete="name"></div>
                   <div class="field"><label for="ct-email">Email</label><input id="ct-email" name="email" type="email" required autocomplete="email"></div>
                 </div>
-                <div class="field"><label for="ct-phone">Phone (optional)</label><input id="ct-phone" name="phone" type="tel" autocomplete="tel"></div>
+                <div class="field"><label for="ct-phone">Phone</label><input id="ct-phone" name="phone" type="tel" autocomplete="tel" required></div>
                 <div class="field"><label for="ct-msg">Message</label><textarea id="ct-msg" name="message" required></textarea></div>
                 <input name="bot-field" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
                 <button class="primary" type="submit">Send message</button><p class="err" role="status"></p>
@@ -859,6 +859,7 @@ async function coachPage(slug, sub = "") {
     if (cf) handleForm(cf, async (f) => {
       if (f["bot-field"]) return;
       if (!f.name || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email || "") || !f.message) throw new Error("Add your name, a valid email and a message.");
+      if (!/^1?\d{10}$/.test(String(f.phone || "").replace(/\D/g, ""))) throw new Error("Add a phone number we can reach you at.");
       await notify("contact", { name: f.name, email: f.email, phone: f.phone, message: f.message, page: slug });
       cf.reset(); $(".err", cf).textContent = ""; toast("Message sent. Thanks!");
     });
@@ -935,12 +936,13 @@ async function coachPage(slug, sub = "") {
       ${payMethods.length > 1 ? `<div class="row" style="gap:8px;margin-bottom:10px">${payMethods.map((m, i) => `<button type="button" class="slot ${i === 0 ? "on" : ""}" data-method="${m[0]}">${m[1]}</button>`).join("")}</div>` : ""}
       <div data-detail>${detail()}</div>
       <div class="pay-step"><span>2</span>Your details</div>
-      ${me ? `<p class="muted small" style="margin:0 0 12px">Buying as <strong style="color:var(--text)">${esc(me.client.name)}</strong> (${esc(me.client.email)})</p>` : `
+      ${me ? `<p class="muted small" style="margin:0 0 12px">Buying as <strong style="color:var(--text)">${esc(me.client.name)}</strong> (${esc(me.client.email)})</p>
+      ${/^1?\d{10}$/.test(String(me.client.phone || "").replace(/\D/g, "")) ? "" : `<div class="field"><label for="p-phone">Phone</label><input id="p-phone" name="phone" type="tel" autocomplete="tel" required></div>`}` : `
       <div class="fields">
         <div class="field"><label for="p-name">Name</label><input id="p-name" name="name" required autocomplete="name"></div>
         <div class="field"><label for="p-email">Email</label><input id="p-email" name="email" type="email" required autocomplete="email"></div>
       </div>
-      <div class="field"><label for="p-phone">Phone (optional)</label><input id="p-phone" name="phone" type="tel" autocomplete="tel"></div>
+      <div class="field"><label for="p-phone">Phone</label><input id="p-phone" name="phone" type="tel" autocomplete="tel" required></div>
       <p class="muted small" style="margin:-4px 0 12px">Your account is set up from your email. No password needed to buy.</p>`}
       <div class="pay-step"><span>3</span>Upload your payment screenshot</div>
       <label class="drop" for="p-proof"><input id="p-proof" type="file" accept="image/*" required style="position:absolute;opacity:0;width:1px;height:1px">
@@ -1064,7 +1066,7 @@ async function coachPage(slug, sub = "") {
         <div class="field"><label for="q-name">Your name</label><input id="q-name" name="name" required autocomplete="name"></div>
         <div class="field"><label for="q-company">Company</label><input id="q-company" name="company" autocomplete="organization"></div>
         <div class="field"><label for="q-email">Work email</label><input id="q-email" name="email" type="email" required autocomplete="email"></div>
-        <div class="field"><label for="q-phone">Phone</label><input id="q-phone" name="phone" type="tel" autocomplete="tel"></div>
+        <div class="field"><label for="q-phone">Phone</label><input id="q-phone" name="phone" type="tel" autocomplete="tel" required></div>
       </div>
       <div class="field"><label for="q-size">About how many people?</label><input id="q-size" name="groupSize" placeholder="e.g. 15"></div>
       <div class="field"><label for="q-msg">What are you looking for?</label><textarea id="q-msg" name="message" placeholder="How often, where, any goals or dates"></textarea></div>
@@ -1087,7 +1089,7 @@ async function coachPage(slug, sub = "") {
           <p class="muted">${mode === "signup" ? `Create an account to buy and book lessons with ${esc(coach.name)}.` : "Welcome back."}</p>
           <form>
             ${mode === "signup" ? `<div class="field"><label for="a-name">Name</label><input id="a-name" name="name" autocomplete="name" required></div>
-              <div class="field"><label for="a-phone">Phone</label><input id="a-phone" name="phone" type="tel" autocomplete="tel"></div>` : ""}
+              <div class="field"><label for="a-phone">Phone</label><input id="a-phone" name="phone" type="tel" autocomplete="tel" required></div>` : ""}
             <div class="field"><label for="a-email">Email</label><input id="a-email" name="email" type="email" autocomplete="email" required></div>
             <div class="field"><label for="a-pw">Password</label><input id="a-pw" name="password" type="password" autocomplete="${mode === "signup" ? "new-password" : "current-password"}" minlength="8" required></div>
             <button class="primary block" type="submit">${mode === "signup" ? "Create account" : "Sign in"}</button>
