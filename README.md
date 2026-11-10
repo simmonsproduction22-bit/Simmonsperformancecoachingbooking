@@ -101,3 +101,7 @@ COACH_DB_URL="$DB" PAYMENTS_MODE=fake npm test                      # wipes the 
 - Self-serve "forgot password" (for now the coach resets it from the client's page in the dashboard)
 - Google Calendar sync
 - Undoing a lesson that has already paid out (do it in the Stripe dashboard with a transfer reversal)
+
+## Photo credits
+
+`public/corporate.jpg` is a free stock photo from Unsplash (photo ID `1549576490-b0b4831ef60a`), used under the Unsplash License: free for commercial use, no attribution required. The other photos are the coach's own.
