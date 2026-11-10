@@ -317,11 +317,18 @@ test("first coach gets the site setup; lesson locations; spam limits", async () 
   const slot = new Date(Math.ceil((Date.now() + 2 * 864e5) / 36e5) * 36e5).toISOString();
   assert.match((await call("POST", "/api/c/simmons/lessons", { startsAt: slot }, r.token)).body.error, /where/);
   assert.match((await call("POST", "/api/c/simmons/lessons", { startsAt: slot, location: "Somewhere else" }, r.token)).body.error, /training locations/);
-  assert.match((await call("POST", "/api/c/simmons/lessons", { startsAt: slot, location: "In-home training" }, r.token)).body.error, /address/);
-  const l = ok(await call("POST", "/api/c/simmons/lessons", { startsAt: slot, location: "In-home training: 1200 Main St, Dallas" }, r.token), 201).lesson;
-  assert.equal(l.location, "In-home training: 1200 Main St, Dallas");
+  assert.match((await call("POST", "/api/c/simmons/lessons", { startsAt: slot, location: "In-home training: 1200 Main St" }, r.token)).body.error, /arranged directly/);
+  const l = ok(await call("POST", "/api/c/simmons/lessons", { startsAt: slot, location: "Iron MMA" }, r.token), 201).lesson;
+  assert.equal(l.location, "Iron MMA");
   const me = ok(await call("GET", "/api/c/simmons/me", null, r.token));
-  assert.equal(me.lessons[0].location, "In-home training: 1200 Main St, Dallas");
+  assert.equal(me.lessons[0].location, "Iron MMA");
+  // The coach can still book in-home with an address.
+  const [cl] = await q(`SELECT id FROM clients WHERE email = 'kai@example.com'`);
+  ok(await call("POST", "/api/c/simmons/manual-purchase", { phone: "4695550100", packageId: pub.packages[2].id, method: "zelle", name: "Kai", email: "kai@example.com", proof }, r.token, { "x-nf-client-connection-ip": "192.0.2.9" }), 201);
+  const [pend] = await q(`SELECT id FROM purchases WHERE status = 'pending' ORDER BY id DESC LIMIT 1`);
+  ok(await call("POST", `/api/coach/purchases/${pend.id}/approve`, {}, coach));
+  const later = new Date(Math.ceil((Date.now() + 3 * 864e5) / 36e5) * 36e5).toISOString();
+  assert.equal(ok(await call("POST", "/api/coach/lessons", { clientId: cl.id, startsAt: later, location: "In-home training: 1200 Main St, Dallas" }, coach), 201).lesson.location, "In-home training: 1200 Main St, Dallas");
 
   // Spam: honeypot refused; 5 submissions per sender per day.
   assert.equal((await call("POST", "/api/c/simmons/manual-purchase", { phone: "4695550100", packageId: pub.packages[2].id, method: "zelle", name: "Bot", email: "bot@example.com", proof, website: "x" }, null, ipA)).status, 400);

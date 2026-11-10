@@ -155,7 +155,8 @@ function lessonLocation(coach: any, raw: unknown, required: boolean): string {
   if (venues.length && !venues.some((v) => loc.toLowerCase() === v.toLowerCase() || loc.toLowerCase().startsWith(v.toLowerCase() + ":"))) {
     throw new UserError("Pick one of the training locations.");
   }
-  if (/home/i.test(loc) && !/:\s*\S{4,}/.test(loc) && required) throw new UserError("Add the address for in-home training.");
+  // Clients can't book in-home online; it's arranged by message. The coach can still book it.
+  if (/home/i.test(loc) && required) throw new UserError("In-home training is arranged directly. Send a message to set it up.");
   return loc;
 }
 

@@ -800,6 +800,18 @@ async function coachPage(slug, sub = "") {
           </div>
         </section>
 
+        ${venueList(coach.venues).some(isHome) ? `
+        <section class="section" id="in-home">
+          <div class="card row spread" style="gap:16px 24px">
+            <div class="grow" style="min-width:240px">
+              <div class="eyebrow">${esc(venueList(coach.venues).find(isHome))}</div>
+              <h2 style="margin-bottom:6px">Train at your place</h2>
+              <p class="muted" style="margin:0">Private lessons at your home${coach.location ? ` in the ${esc(coach.location.split(",")[0])} area` : ""}. In-home training is arranged directly: send a message with your area and the days that work for you.</p>
+            </div>
+            <button class="primary" data-act="home-msg">Message to arrange</button>
+          </div>
+        </section>` : ""}
+
         ${coach.bio ? `
         <section class="section" id="about">
           <div class="band">
@@ -841,7 +853,7 @@ async function coachPage(slug, sub = "") {
           <div class="eyebrow">${coach.location || coach.venues ? "Where and policies" : "Policies"}</div>
           <div class="policies" style="margin-top:8px">
             ${coach.location || coach.venues ? `<div id="where"><b>${esc(coach.location || "Where we train")}</b>${coach.venues
-              ? `<ul class="creds" style="margin:6px 0 0">${coach.venues.split(/\s*·\s*|\n/).filter(Boolean).map((v) => `<li>${esc(v)}</li>`).join("")}</ul>` : ""}</div>` : ""}
+              ? `<ul class="creds" style="margin:6px 0 0">${venueList(coach.venues).map((v) => `<li>${esc(v)}${isHome(v) ? ` <span class="muted" style="font-weight:500">(message to arrange)</span>` : ""}</li>`).join("")}</ul>` : ""}</div>` : ""}
             <div><b>${coach.cancelWindowHours} hours</b>Reschedule or cancel online up to ${coach.cancelWindowHours} hours before a lesson and it goes back on your balance.</div>
             <div><b>${coach.maxDaysAhead} days out</b>Book at least ${coach.minNoticeHours} hour${coach.minNoticeHours === 1 ? "" : "s"} ahead and up to ${coach.maxDaysAhead} days out.</div>
           </div>
@@ -881,6 +893,7 @@ async function coachPage(slug, sub = "") {
     }
     if (act === "set-password") { e.preventDefault(); return passwordSheet(); }
     if (act === "quote") return quoteSheet();
+    if (act === "home-msg") return messageAbout("In-home training");
     if (act === "go") { document.getElementById(b.dataset.to)?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
     if (act === "book") return bookSheet();
     if (act === "move") return bookSheet(me.lessons.find((l) => l.id == id));
@@ -987,6 +1000,13 @@ async function coachPage(slug, sub = "") {
     });
   }
 
+  function messageAbout(topic) {
+    const box = $("#ct-msg");
+    if (box && !box.value.trim()) box.value = `${topic}: `;
+    document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => $("#ct-name")?.focus({ preventScroll: true }), 500);
+  }
+
   /** Privacy policy and terms, filled in from the coach's settings. */
   function legalPage(kind) {
     const who = coach.personName ? `${esc(coach.personName)} (${esc(coach.name)})` : esc(coach.name);
@@ -1015,7 +1035,7 @@ async function coachPage(slug, sub = "") {
       <h2>Payment</h2><p>Pay by Zelle or Cash App and upload a screenshot. Your lessons unlock once the payment is confirmed. If a payment can't be confirmed, the purchase is declined and you'll see why.</p>
       <h2>Booking, rescheduling and cancelling</h2><p>Book online at least ${coach.minNoticeHours} hour${coach.minNoticeHours === 1 ? "" : "s"} ahead. You can reschedule or cancel online up to ${coach.cancelWindowHours} hours before a lesson and it goes back on your balance. Inside ${coach.cancelWindowHours} hours, or if you don't show up, the lesson counts as used.</p>
       <h2>Refunds</h2><p>Lessons already taken aren't refundable. For unused lessons, ${contact} and we'll work it out with you.</p>
-      ${venues.length ? `<h2>Where lessons happen</h2><p>${venues.map(esc).join(", ")}. At a gym, follow that gym's rules. For in-home training, provide a safe, clear space and an accurate address.</p>` : ""}
+      ${venues.length ? `<h2>Where lessons happen</h2><p>${venues.map(esc).join(", ")}. At a gym, follow that gym's rules. In-home training is arranged by message; provide a safe, clear space and an accurate address.</p>` : ""}
       <h2>Health and safety</h2><p>Combat sports and fitness training carry a risk of injury. By booking, you confirm you're healthy enough to train, you'll tell your coach about any injuries or conditions, and you take part at your own risk. Check with a doctor if you're unsure. Anyone under 18 needs a parent or guardian's permission.</p>
       <h2>Contact</h2><p>Questions about these terms: ${contact}.</p>`;
     document.title = `${kind === "privacy" ? "Privacy policy" : "Terms"} · ${coach.name}`;
@@ -1118,7 +1138,9 @@ async function coachPage(slug, sub = "") {
       if (!choices.some((x) => x.key === key)) choices.push({ key, credit: c, label: c.kind === "group" ? groupLabel(c.partySize) : "Private lesson" });
     }
     let chosen = choices[0];
-    const venues = venueList(coach.venues);
+    const allVenues = venueList(coach.venues);
+    const venues = allVenues.filter((v) => !isHome(v));          // in-home is arranged by message, not booked online
+    const homeVenue = allVenues.find(isHome);
     let venue = venues.length === 1 ? venues[0] : "";
     sheet(moving ? "Reschedule lesson" : "Book a lesson", `
       ${moving ? `<p class="muted">Currently ${esc(fmtWhen(moving.startsAt, tz))}</p>` : ""}
@@ -1126,8 +1148,8 @@ async function coachPage(slug, sub = "") {
         `<button class="slot ${i === 0 ? "on" : ""}" data-kind="${c.key}">${esc(c.label)}</button>`).join("")}</div>` : ""}
       <div data-picker></div>
       ${moving || !venues.length ? "" : `<label style="margin-top:16px">Where?</label><div class="row" style="gap:8px">${venues.map((v) =>
-        `<button class="slot" data-venue="${esc(v)}">${esc(v)}</button>`).join("")}</div>
-        <div class="field hidden" data-addr style="margin-top:10px"><label for="b-addr">Address for in-home training</label><input id="b-addr" autocomplete="street-address" maxlength="160" placeholder="Street, city"></div>`}
+        `<button class="slot ${venues.length === 1 ? "on" : ""}" data-venue="${esc(v)}">${esc(v)}</button>`).join("")}</div>
+        ${homeVenue ? `<p class="muted small" style="margin:8px 0 0">Want ${esc(homeVenue.toLowerCase())}? It's arranged directly. <a href="#" data-home-msg>Send a message</a>.</p>` : ""}`}
       ${moving ? "" : `<div class="field" style="margin-top:14px"><label for="b-note">Anything to work on? (optional)</label><input id="b-note" maxlength="500"></div>`}
       <button class="primary block" data-go disabled style="margin-top:14px">Pick a time</button><p class="err"></p>`,
       (body, close) => {
@@ -1137,9 +1159,9 @@ async function coachPage(slug, sub = "") {
           if (vb) {
             venue = vb.dataset.venue;
             body.querySelectorAll("[data-venue]").forEach((x) => x.classList.toggle("on", x === vb));
-            $("[data-addr]", body).classList.toggle("hidden", !isHome(venue));
             return;
           }
+          if (e.target.closest("[data-home-msg]")) { e.preventDefault(); close(); messageAbout("In-home training"); return; }
           const k = e.target.closest("[data-kind]"); if (!k) return;
           chosen = choices.find((c) => c.key === k.dataset.kind);
           body.querySelectorAll("[data-kind]").forEach((x) => x.classList.toggle("on", x === k));
@@ -1153,9 +1175,7 @@ async function coachPage(slug, sub = "") {
             if (moving) await api("POST", `/c/${slug}/lessons/${moving.id}/reschedule`, { startsAt: pick }, token);
             else {
               if (venues.length && !venue) throw new Error("Pick where you'd like to train.");
-              const addr = isHome(venue) ? $("#b-addr").value.trim() : "";
-              if (isHome(venue) && addr.length < 5) throw new Error("Add the address for in-home training.");
-              const where = venue ? (addr ? `${venue}: ${addr}` : venue) : "";
+              const where = venue;
               await api("POST", `/c/${slug}/lessons`, { startsAt: pick, note: $("#b-note").value, purchaseId: chosen?.credit.purchaseId, location: where }, token);
               notify("lesson-booked", { name: me.client.name, email: me.client.email, phone: me.client.phone, when: fmtWhen(pick, tz), where, note: $("#b-note").value });
             }
@@ -1214,7 +1234,7 @@ async function coachApp() {
           <p class="small muted" style="text-align:center"><a href="#" data-sw>${mode === "login" ? "New coach? Create an account" : "Have an account? Sign in"}</a></p>
         </div></main>`;
       $("[data-sw]").onclick = (e) => { e.preventDefault(); mode = mode === "login" ? "signup" : "login"; render(); };
-      handleForm($("form"), async (f) => {
+      handleForm($("form", app), async (f) => {
         if (mode === "signup") {
           f.slug = f.slug.toLowerCase();
           f.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -1775,6 +1795,7 @@ async function coachApp() {
   return start();
 }
 
+document.addEventListener("submit", (e) => { if (e.target.closest("#app, .sheet-bg")) e.preventDefault(); }, true);
 window.addEventListener("popstate", route);
 route();
 </script>
